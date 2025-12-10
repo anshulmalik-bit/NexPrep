@@ -1,31 +1,16 @@
 # NexPrep Render Configuration
-# This will deploy the frontend as a static site and backend as a web service
+# Single web service that serves both API and frontend
 
 services:
-  # Backend API Server
   - type: web
-    name: nexprep-api
+    name: nexprep
     runtime: node
     region: oregon
-    buildCommand: cd server && npm install && npm run build
-    startCommand: cd server && npm start
+    buildCommand: npm run build
+    startCommand: npm start
     envVars:
       - key: NODE_ENV
         value: production
       - key: GEMINI_API_KEY
         sync: false
     healthCheckPath: /api/health
-
-  # Frontend Static Site
-  - type: static
-    name: nexprep-frontend
-    buildCommand: cd client && npm install && npm run build
-    staticPublishPath: client/dist
-    headers:
-      - path: /*
-        name: Cache-Control
-        value: public, max-age=31536000, immutable
-    routes:
-      - type: rewrite
-        source: /*
-        destination: /index.html
