@@ -1,0 +1,461 @@
+/* =========================================
+   NexPrep Deep Intelligence Navigation
+   Frosted Ice Bar + Neural Knot Pulse
+   ========================================= */
+
+.navbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: var(--nav-height);
+    background: var(--frost-bg);
+    backdrop-filter: var(--frost-blur);
+    -webkit-backdrop-filter: var(--frost-blur);
+    border-bottom: 1px solid var(--frost-border);
+    z-index: var(--z-fixed);
+}
+
+.navbar__container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 100%;
+    max-width: var(--max-width);
+    margin: 0 auto;
+    padding: 0 var(--space-6);
+}
+
+/* Logo */
+.navbar__logo {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    text-decoration: none;
+    font-family: var(--font-heading);
+    font-size: var(--text-xl);
+    font-weight: var(--font-bold);
+    color: var(--color-text);
+}
+
+.navbar__logo-icon {
+    position: relative;
+    width: 40px;
+    height: 40px;
+    background: var(--gradient-brand);
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 14px var(--color-primary-glow);
+}
+
+.navbar__logo-n {
+    color: white;
+    font-weight: var(--font-bold);
+    font-size: var(--text-lg);
+}
+
+/* Neural Knot Pulse (Quinn indicator) */
+.navbar__quinn-dot {
+    position: absolute;
+    bottom: -4px;
+    right: -4px;
+    width: 14px;
+    height: 14px;
+    background: linear-gradient(135deg, var(--neural-indigo), var(--neural-teal));
+    border-radius: 50%;
+    border: 2px solid white;
+    box-shadow: 0 0 8px var(--color-primary-glow);
+    animation: neuralPulse 2s ease-in-out infinite;
+}
+
+@keyframes neuralPulse {
+
+    0%,
+    100% {
+        box-shadow: 0 0 8px var(--color-primary-glow);
+        transform: scale(1);
+    }
+
+    50% {
+        box-shadow: 0 0 16px var(--color-primary-glow), 0 0 24px var(--color-accent-glow);
+        transform: scale(1.1);
+    }
+}
+
+.navbar__logo-text {
+    display: flex;
+}
+
+.navbar__logo-nex {
+    background: var(--gradient-brand);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* Desktop Navigation Links */
+.navbar__links {
+    display: flex;
+    align-items: center;
+    gap: var(--space-8);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.navbar__link {
+    color: var(--color-text-secondary);
+    text-decoration: none;
+    font-size: var(--text-sm);
+    font-weight: var(--font-medium);
+    transition: color var(--transition-base);
+    padding: var(--space-2) 0;
+    position: relative;
+}
+
+.navbar__link:hover,
+.navbar__link--active {
+    color: var(--color-text);
+}
+
+.navbar__link--active::after {
+    content: '';
+    position: absolute;
+    bottom: -4px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--gradient-brand);
+    border-radius: var(--radius-full);
+}
+
+/* Desktop Actions */
+.navbar__actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+}
+
+.navbar__btn-login {
+    padding: var(--space-2) var(--space-5);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-full);
+    background: transparent;
+    color: var(--color-text);
+    font-size: var(--text-sm);
+    font-weight: var(--font-medium);
+    cursor: pointer;
+    transition: all var(--transition-base);
+}
+
+.navbar__btn-login:hover {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+}
+
+.navbar__btn-cta {
+    padding: var(--space-2) var(--space-5);
+    border: none;
+    border-radius: var(--radius-full);
+    background: var(--gradient-brand);
+    color: white;
+    font-size: var(--text-sm);
+    font-weight: var(--font-semibold);
+    cursor: pointer;
+    transition: all var(--transition-base);
+    text-decoration: none;
+    box-shadow: 0 4px 14px var(--color-primary-glow);
+}
+
+.navbar__btn-cta:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--glow-primary);
+}
+
+/* Mobile Actions */
+.navbar__mobile-actions {
+    display: none;
+    align-items: center;
+    gap: var(--space-3);
+}
+
+.navbar__btn-cta-mobile {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--gradient-brand);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 14px var(--color-primary-glow);
+}
+
+.navbar__toggle {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: var(--space-2);
+    min-width: var(--min-touch-target);
+    min-height: var(--min-touch-target);
+    justify-content: center;
+    align-items: center;
+}
+
+.navbar__toggle span {
+    width: 22px;
+    height: 2px;
+    background: var(--color-text);
+    border-radius: var(--radius-full);
+    transition: all var(--transition-base);
+}
+
+.navbar__toggle span.open:first-child {
+    transform: translateY(7px) rotate(45deg);
+}
+
+.navbar__toggle span.open:nth-child(2) {
+    opacity: 0;
+}
+
+.navbar__toggle span.open:last-child {
+    transform: translateY(-7px) rotate(-45deg);
+}
+
+/* Mobile Drawer */
+.navbar__drawer {
+    position: fixed;
+    inset: 0;
+    z-index: calc(var(--z-fixed) - 1);
+    pointer-events: none;
+}
+
+.navbar__drawer--open {
+    pointer-events: auto;
+}
+
+.navbar__drawer-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.3);
+    opacity: 0;
+    transition: opacity var(--transition-slow);
+}
+
+.navbar__drawer--open .navbar__drawer-backdrop {
+    opacity: 1;
+}
+
+.navbar__drawer-content {
+    position: absolute;
+    top: var(--nav-height);
+    right: 0;
+    bottom: 0;
+    width: 300px;
+    max-width: 80vw;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    transform: translateX(100%);
+    transition: transform var(--transition-slow);
+    padding: var(--space-6);
+    border-left: 1px solid var(--color-border);
+}
+
+.navbar__drawer--open .navbar__drawer-content {
+    transform: translateX(0);
+}
+
+.navbar__drawer-links {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.navbar__drawer-link {
+    display: block;
+    padding: var(--space-4);
+    color: var(--color-text);
+    text-decoration: none;
+    font-weight: var(--font-medium);
+    border-radius: var(--radius-lg);
+    transition: all var(--transition-base);
+}
+
+.navbar__drawer-link:hover,
+.navbar__drawer-link--active {
+    background: var(--gradient-brand-light);
+    color: var(--color-primary);
+}
+
+.navbar__drawer-login {
+    width: 100%;
+    padding: var(--space-4);
+    margin-top: var(--space-4);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-full);
+    background: transparent;
+    color: var(--color-text);
+    font-size: var(--text-base);
+    font-weight: var(--font-medium);
+    cursor: pointer;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+    .navbar__links {
+        display: none;
+    }
+
+    .navbar__actions {
+        display: none;
+    }
+
+    .navbar__mobile-actions {
+        display: flex;
+    }
+}
+
+@media (max-width: 480px) {
+    .navbar__container {
+        padding: 0 var(--space-4);
+    }
+
+    .navbar__logo-text {
+        display: none;
+    }
+}
+
+/* Login Modal */
+.login-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: var(--z-modal);
+    padding: var(--space-6);
+    animation: loginFadeIn 0.2s ease;
+}
+
+@keyframes loginFadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+.login-modal__content {
+    background: white;
+    border-radius: var(--radius-2xl);
+    padding: var(--space-10);
+    max-width: 400px;
+    width: 100%;
+    position: relative;
+    animation: loginSlideIn 0.3s ease;
+}
+
+@keyframes loginSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.login-modal__close {
+    position: absolute;
+    top: var(--space-4);
+    right: var(--space-4);
+    width: 40px;
+    height: 40px;
+    border: none;
+    background: var(--color-background);
+    border-radius: 50%;
+    font-size: var(--text-lg);
+    color: var(--color-text-muted);
+    cursor: pointer;
+    transition: all var(--transition-base);
+}
+
+.login-modal__close:hover {
+    background: var(--color-border);
+    color: var(--color-text);
+}
+
+.login-modal__icon {
+    width: 72px;
+    height: 72px;
+    background: var(--gradient-brand);
+    border-radius: var(--radius-xl);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--text-3xl);
+    margin: 0 auto var(--space-5);
+    box-shadow: var(--glow-primary);
+}
+
+.login-modal__title {
+    font-size: var(--text-2xl);
+    font-weight: var(--font-bold);
+    text-align: center;
+    margin-bottom: var(--space-2);
+}
+
+.login-modal__subtitle {
+    text-align: center;
+    color: var(--color-text-secondary);
+    margin-bottom: var(--space-6);
+}
+
+.login-modal__form {
+    margin-bottom: var(--space-6);
+}
+
+.login-modal__form .form-group {
+    margin-bottom: var(--space-4);
+}
+
+.login-modal__form .form-input {
+    width: 100%;
+    padding: var(--space-4);
+    font-size: var(--text-base);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    transition: all var(--transition-base);
+}
+
+.login-modal__form .form-input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px var(--color-primary-glow);
+}
+
+.login-modal__footer {
+    text-align: center;
+    font-size: var(--text-sm);
+    color: var(--color-text-secondary);
+    margin: 0;
+}
+
+.login-modal__footer a {
+    color: var(--color-primary);
+    font-weight: var(--font-medium);
+}
