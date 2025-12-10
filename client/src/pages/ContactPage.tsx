@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Button } from '../components/Button';
-import './ContactPage.css';
+import { Link } from 'react-router-dom';
+import { NeuralKnot } from '../components/NeuralKnot';
 
 export function ContactPage() {
     const [formData, setFormData] = useState({
@@ -17,64 +17,77 @@ export function ContactPage() {
     };
 
     return (
-        <div className="contact-page">
-            <div className="container container--narrow">
-                <div className="page-header text-center">
-                    <h1 className="page-title">Contact Us</h1>
+        <div className="min-h-screen bg-canvas pt-[72px]">
+            <div className="container py-12 lg:py-20">
+                {/* Header */}
+                <div className="text-center mb-12">
+                    <h1 className="page-title mb-4">Contact Us</h1>
                     <p className="page-subtitle">
                         Have questions or feedback? We'd love to hear from you.
                     </p>
                 </div>
 
-                {submitted ? (
-                    <div className="contact-success">
-                        <div className="contact-success__icon">✉️</div>
-                        <h2>Message Sent!</h2>
-                        <p>Thank you for reaching out. We'll get back to you soon.</p>
-                        <Button to="/" variant="secondary">
-                            Back to Home
-                        </Button>
-                    </div>
-                ) : (
-                    <form className="contact-form" onSubmit={handleSubmit}>
-                        <div className="form-group">
-                            <label className="form-label" htmlFor="name">Name</label>
-                            <input
-                                type="text"
-                                id="name"
-                                className="form-input"
-                                value={formData.name}
-                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                required
-                            />
+                <div className="max-w-lg mx-auto">
+                    {submitted ? (
+                        <div className="glass-card-strong p-8 lg:p-12 text-center">
+                            <div className="w-16 h-16 mx-auto mb-6">
+                                <NeuralKnot size="md" state="celebrating" />
+                            </div>
+                            <h2 className="text-2xl font-bold text-text mb-3">Message Sent!</h2>
+                            <p className="text-text-secondary mb-8">
+                                Thank you for reaching out. We'll get back to you soon.
+                            </p>
+                            <Link to="/" className="btn-primary px-8 py-3 rounded-full">
+                                Back to Home
+                            </Link>
                         </div>
-                        <div className="form-group">
-                            <label className="form-label" htmlFor="email">Email</label>
-                            <input
-                                type="email"
-                                id="email"
-                                className="form-input"
-                                value={formData.email}
-                                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                required
-                            />
-                        </div>
-                        <div className="form-group">
-                            <label className="form-label" htmlFor="message">Message</label>
-                            <textarea
-                                id="message"
-                                className="form-input form-textarea"
-                                value={formData.message}
-                                onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                                rows={5}
-                                required
-                            />
-                        </div>
-                        <Button type="submit" variant="cta" size="lg">
-                            Send Message
-                        </Button>
-                    </form>
-                )}
+                    ) : (
+                        <form className="glass-card p-6 lg:p-8 space-y-6" onSubmit={handleSubmit}>
+                            <div>
+                                <label className="block text-sm font-medium text-text mb-2" htmlFor="name">
+                                    Name
+                                </label>
+                                <input
+                                    type="text"
+                                    id="name"
+                                    className="form-input w-full"
+                                    value={formData.name}
+                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-text mb-2" htmlFor="email">
+                                    Email
+                                </label>
+                                <input
+                                    type="email"
+                                    id="email"
+                                    className="form-input w-full"
+                                    value={formData.email}
+                                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-text mb-2" htmlFor="message">
+                                    Message
+                                </label>
+                                <textarea
+                                    id="message"
+                                    className="form-input w-full resize-none"
+                                    value={formData.message}
+                                    onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                                    rows={5}
+                                    required
+                                />
+                            </div>
+                            <button type="submit" className="btn-cta w-full py-4 rounded-full text-lg">
+                                Send Message
+                            </button>
+                        </form>
+                    )}
+                </div>
             </div>
         </div>
     );

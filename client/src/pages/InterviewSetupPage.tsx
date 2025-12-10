@@ -1,177 +1,377 @@
 import { useState, useRef } from 'react';
-import type { ChangeEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useInterviewStore } from '../store/interview-store';
-import { api } from '../services/api';
-import './InterviewSetupPage.css';
+import { popularCompanies } from '../data/tracks';
+import { NeuralKnot } from '../components/NeuralKnot';
+
+type AnswerMode = 'text' | 'audio' | 'video';
 
 export function InterviewSetupPage() {
     const navigate = useNavigate();
-    const { trackId: _trackId, roleId: _roleId, setCompany, setResume, quinnMode } = useInterviewStore();
-    const [companySearch, setCompanySearch] = useState('');
-    const [isDragging, setIsDragging] = useState(false);
-    const [uploadStatus, setUploadStatus] = useState<'idle' | 'uploading' | 'success' | 'error'>('idle');
-    const [quinnMessage, setQuinnMessage] = useState('');
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const handleCompanySearch = (e: ChangeEvent<HTMLInputElement>) => {
-        setCompanySearch(e.target.value);
-        setCompany(e.target.value || null, null, null);
-    };
+    const {
+        trackId,
+        roleId,
+        setCompanyInfo,
+        setResumeData,
+        setQuinnMode
+    } = useInterviewStore();
 
-    const handleFileSelect = async (file: File) => {
-        if (file.type !== 'application/pdf') {
-            setQuinnMessage(quinnMode === 'SUPPORTIVE'
-                ? "Oops! I can only read PDF files. Could you try uploading a PDF?"
-                : "PDF only. Try again.");
-            return;
-        }
+    const [companyName, setCompanyName] = useState('');
+    const [companySearch, setCompanySearch] = useState('');
+    const [activeTab, setActiveTab] = useState<'overview' | 'news' | 'culture'>('overview');
+    const [resumeFile, setResumeFile] = useState<File | null>(null);
+    const [resumeText, setResumeText] = useState('');
+    const [answerMode, setAnswerMode] = useState<AnswerMode>('text');
+    const [quinnTone, setQuinnTone] = useState<'SUPPORTIVE' | 'DIRECT'>('SUPPORTIVE');
+    const [isUploading, setIsUploading] = useState(false);
 
-        setUploadStatus('uploading');
+    const filteredCompanies = popularCompanies.filter(c =>
+        c.toLowerCase().includes(companySearch.toLowerCase())
+    );
 
-        try {
-            const result = await api.uploadResume(file);
-            setResume(result.text, result.keywords, result.status);
-            setUploadStatus('success');
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
 
-            if (result.status === 'success') {
-                setQuinnMessage(quinnMode === 'SUPPORTIVE'
-                    ? `Great resume! I spotted some key skills: ${result.keywords.slice(0, 3).join(', ')}. I'll tailor questions based on your experience.`
-                    : `Got it. Skills noted: ${result.keywords.slice(0, 3).join(', ')}. Let's proceed.`);
-            } else {
-                setQuinnMessage(quinnMode === 'SUPPORTIVE'
-                    ? "I had some trouble reading parts of your resume, but don't worry! I'll still create great questions for you."
-                    : "Partial parse. I'll work with what I have.");
-            }
-        } catch (error) {
-            setUploadStatus('error');
-            setQuinnMessage(quinnMode === 'SUPPORTIVE'
-                ? "I couldn't read your resume, but that's okay! We'll continue with role-based questions."
-                : "Resume failed. Proceeding with standard questions.");
-        }
-    };
+        setIsUploading(true);
+        setResumeFile(file);
 
-    const handleDrop = (e: React.DragEvent) => {
-        e.preventDefault();
-        setIsDragging(false);
-        const file = e.dataTransfer.files[0];
-        if (file) handleFileSelect(file);
+        // Simulate file processing
+        setTimeout(() => {
+            setResumeText(`Parsed resume content from ${file.name}`);
+            setIsUploading(false);
+        }, 1500);
     };
 
     const handleStartSimulation = () => {
-        navigate('/setup/quinn-mode');
+        setCompanyInfo(companyName || undefined, undefined);
+        setResumeData(resumeText || undefined, undefined);
+        setQuinnMode(quinnTone);
+
+        // Navigate to calibration or interview based on mode
+        if (answerMode === 'video' || answerMode === 'audio') {
+            navigate('/calibration');
+        } else {
+            navigate('/interview');
+        }
     };
 
+    const canProceed = trackId && roleId;
+
     return (
-        <div className="setup-page page">
-            <div className="container">
-                <div className="page-header">
+        <div className="min-h-screen bg-canvas pt-[72px]">
+            <div className="container py-12">
+                {/* Header */}
+                <div className="text-center mb-12">
                     <h1 className="page-title">Interview Setup</h1>
-                    <p className="page-subtitle">Add company context and resume for personalized questions</p>
+                    <p className="page-subtitle">
+                        Customize your practice session with company context and your resume
+                    </p>
                 </div>
 
-                <div className="setup-layout">
-                    {/* Company Selection */}
-                    <div className="setup-section glass-card">
-                        <h3 className="setup-section__title">🏢 Company Context</h3>
+                <div className="grid lg:grid-cols-2 gap-8 max-w-6xl mx-auto">
+                    {/* Left Column: Company Selector */}
+                    <div className="space-y-6">
+                        <div className="glass-card p-6">
+                            <h3 className="text-lg font-semibold text-text mb-4 flex items-center gap-2">
+                                <span>🏢</span> Target Company
+                                <span className="text-xs font-normal text-text-muted">(Optional)</span>
+                            </h3>
 
-                        <div className="form-group">
-                            <input
-                                type="text"
-                                className="form-input search-input"
-                                placeholder="Search company..."
-                                value={companySearch}
-                                onChange={handleCompanySearch}
-                            />
-                        </div>
-
-                        <div className="company-cards">
-                            <div className="company-info-card">
-                                <h4>Overview</h4>
-                                <p>{companySearch ? `Research insights for ${companySearch} will appear here during the interview.` : 'Enter a company to see insights'}</p>
+                            {/* Search */}
+                            <div className="relative mb-4">
+                                <input
+                                    type="text"
+                                    className="form-input pl-10"
+                                    placeholder="Search companies..."
+                                    value={companySearch}
+                                    onChange={(e) => {
+                                        setCompanySearch(e.target.value);
+                                        setCompanyName(e.target.value);
+                                    }}
+                                />
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted">
+                                    🔍
+                                </span>
                             </div>
-                            <div className="company-info-card">
-                                <h4>Recent News</h4>
-                                <p>Latest company updates and announcements</p>
-                            </div>
-                            <div className="company-info-card">
-                                <h4>Culture & Values</h4>
-                                <p>Work environment and company principles</p>
-                            </div>
-                        </div>
 
-                        {companySearch && (
-                            <div className="quinn-insight">
-                                <div className="quinn-insight__avatar">🤖</div>
-                                <p className="quinn-insight__message">
-                                    "Nice choice! {companySearch} has an interesting interview style. I'll prepare accordingly."
-                                </p>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Resume Upload */}
-                    <div className="setup-section glass-card">
-                        <h3 className="setup-section__title">📄 Resume Upload</h3>
-
-                        <div
-                            className={`upload-zone ${isDragging ? 'upload-zone--dragging' : ''} ${uploadStatus === 'success' ? 'upload-zone--success' : ''}`}
-                            onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
-                            onDragLeave={() => setIsDragging(false)}
-                            onDrop={handleDrop}
-                            onClick={() => fileInputRef.current?.click()}
-                        >
-                            <input
-                                ref={fileInputRef}
-                                type="file"
-                                accept=".pdf"
-                                onChange={(e) => e.target.files?.[0] && handleFileSelect(e.target.files[0])}
-                                hidden
-                            />
-
-                            {uploadStatus === 'uploading' ? (
-                                <div className="upload-zone__loading">
-                                    <div className="loading-spinner" />
-                                    <p>Analyzing resume...</p>
+                            {/* Popular Companies */}
+                            {companySearch === '' && (
+                                <div className="flex flex-wrap gap-2 mb-4">
+                                    {popularCompanies.slice(0, 8).map((company) => (
+                                        <button
+                                            key={company}
+                                            onClick={() => {
+                                                setCompanyName(company);
+                                                setCompanySearch(company);
+                                            }}
+                                            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all
+                                                ${companyName === company
+                                                    ? 'bg-primary text-white'
+                                                    : 'bg-slate-100 text-text-secondary hover:bg-slate-200'
+                                                }`}
+                                        >
+                                            {company}
+                                        </button>
+                                    ))}
                                 </div>
-                            ) : uploadStatus === 'success' ? (
-                                <div className="upload-zone__success">
-                                    <span className="upload-zone__icon">✅</span>
-                                    <p>Resume uploaded successfully!</p>
+                            )}
+
+                            {/* Search Results */}
+                            {companySearch && filteredCompanies.length > 0 && companySearch !== companyName && (
+                                <div className="border border-slate-200 rounded-xl overflow-hidden mb-4">
+                                    {filteredCompanies.slice(0, 5).map((company) => (
+                                        <button
+                                            key={company}
+                                            onClick={() => {
+                                                setCompanyName(company);
+                                                setCompanySearch(company);
+                                            }}
+                                            className="w-full px-4 py-3 text-left hover:bg-slate-50 transition-colors border-b last:border-b-0 border-slate-100"
+                                        >
+                                            {company}
+                                        </button>
+                                    ))}
                                 </div>
-                            ) : (
-                                <>
-                                    <span className="upload-zone__icon">📤</span>
-                                    <p className="upload-zone__text">
-                                        Drag & drop your resume or <span>click to browse</span>
-                                    </p>
-                                    <p className="upload-zone__hint">PDF only • Max 5MB</p>
-                                </>
+                            )}
+
+                            {/* Company Tabs */}
+                            {companyName && (
+                                <div className="mt-6">
+                                    <div className="flex gap-1 p-1 bg-slate-100 rounded-xl mb-4">
+                                        {(['overview', 'news', 'culture'] as const).map((tab) => (
+                                            <button
+                                                key={tab}
+                                                onClick={() => setActiveTab(tab)}
+                                                className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium capitalize transition-all
+                                                    ${activeTab === tab
+                                                        ? 'bg-white text-text shadow-sm'
+                                                        : 'text-text-secondary hover:text-text'
+                                                    }`}
+                                            >
+                                                {tab}
+                                            </button>
+                                        ))}
+                                    </div>
+
+                                    <div className="bg-slate-50 rounded-xl p-4">
+                                        {activeTab === 'overview' && (
+                                            <p className="text-text-secondary text-sm">
+                                                Company overview and key information will be displayed here to help you prepare for your interview.
+                                            </p>
+                                        )}
+                                        {activeTab === 'news' && (
+                                            <p className="text-text-secondary text-sm">
+                                                Recent news and updates about {companyName} will appear here.
+                                            </p>
+                                        )}
+                                        {activeTab === 'culture' && (
+                                            <p className="text-text-secondary text-sm">
+                                                Culture insights and values of {companyName} will be shown here.
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Quinn Insight */}
+                            {companyName && (
+                                <div className="mt-4 flex items-start gap-3 p-4 bg-primary/5 rounded-xl border border-primary/10">
+                                    <div className="w-8 h-8 flex-shrink-0">
+                                        <NeuralKnot size="sm" state="coaching" />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm text-text font-medium">Quinn's Insight</p>
+                                        <p className="text-sm text-text-secondary mt-1">
+                                            I'll tailor questions based on {companyName}'s interview style and culture.
+                                        </p>
+                                    </div>
+                                </div>
                             )}
                         </div>
+                    </div>
 
-                        {quinnMessage && (
-                            <div className="quinn-message">
-                                <div className="quinn-message__avatar">🤖</div>
-                                <div className="quinn-message__bubble">
-                                    <p>{quinnMessage}</p>
-                                </div>
+                    {/* Right Column: Resume Upload */}
+                    <div className="space-y-6">
+                        <div className="glass-card p-6">
+                            <h3 className="text-lg font-semibold text-text mb-4 flex items-center gap-2">
+                                <span>📄</span> Your Resume
+                                <span className="text-xs font-normal text-text-muted">(Optional)</span>
+                            </h3>
+
+                            {/* Upload Box */}
+                            <div
+                                onClick={() => fileInputRef.current?.click()}
+                                className={`relative border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all duration-300
+                                    ${resumeFile
+                                        ? 'border-accent bg-accent/5'
+                                        : 'border-primary/30 hover:border-primary hover:bg-primary/5'
+                                    }`}
+                            >
+                                <input
+                                    ref={fileInputRef}
+                                    type="file"
+                                    accept=".pdf,.doc,.docx,.txt"
+                                    className="hidden"
+                                    onChange={handleFileUpload}
+                                />
+
+                                {isUploading ? (
+                                    <div className="flex flex-col items-center">
+                                        <div className="loading-spinner mb-4" />
+                                        <p className="text-text-secondary">Processing resume...</p>
+                                    </div>
+                                ) : resumeFile ? (
+                                    <div className="flex flex-col items-center">
+                                        <div className="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center text-2xl mb-3">
+                                            ✓
+                                        </div>
+                                        <p className="font-medium text-text">{resumeFile.name}</p>
+                                        <p className="text-sm text-text-secondary mt-1">Click to replace</p>
+                                    </div>
+                                ) : (
+                                    <div className="flex flex-col items-center">
+                                        <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-2xl mb-3">
+                                            📤
+                                        </div>
+                                        <p className="font-medium text-text">Drop your resume here</p>
+                                        <p className="text-sm text-text-secondary mt-1">or click to browse</p>
+                                        <p className="text-xs text-text-muted mt-3">PDF, DOC, DOCX, or TXT</p>
+                                    </div>
+                                )}
                             </div>
-                        )}
 
-                        <p className="setup-section__skip">
-                            No resume? No problem — we'll use role-based questions.
-                        </p>
+                            {/* Quinn's First Impression */}
+                            {resumeFile && (
+                                <div className="mt-4 flex items-start gap-3 p-4 bg-accent/5 rounded-xl border border-accent/10">
+                                    <div className="w-8 h-8 flex-shrink-0">
+                                        <NeuralKnot size="sm" state="speaking" />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm text-text font-medium">Quinn's First Impression</p>
+                                        <p className="text-sm text-text-secondary mt-1">
+                                            Great! I'll ask questions specific to your background and experiences.
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
 
-                <div className="setup-actions">
+                {/* Answer Mode Selection */}
+                <div className="max-w-6xl mx-auto mt-8">
+                    <div className="glass-card p-6">
+                        <h3 className="text-lg font-semibold text-text mb-6 text-center">
+                            Choose Your Answer Mode
+                        </h3>
+
+                        <div className="grid sm:grid-cols-3 gap-4">
+                            {/* Text Mode */}
+                            <button
+                                onClick={() => setAnswerMode('text')}
+                                className={`p-6 rounded-xl border-2 transition-all duration-300 text-left
+                                    ${answerMode === 'text'
+                                        ? 'border-primary bg-primary/5 shadow-frost'
+                                        : 'border-slate-200 hover:border-primary/30'
+                                    }`}
+                            >
+                                <div className="text-3xl mb-3">📝</div>
+                                <h4 className="font-semibold text-text mb-1">Text</h4>
+                                <p className="text-sm text-text-secondary">Type your answers</p>
+                            </button>
+
+                            {/* Audio Mode */}
+                            <button
+                                onClick={() => setAnswerMode('audio')}
+                                className={`p-6 rounded-xl border-2 transition-all duration-300 text-left
+                                    ${answerMode === 'audio'
+                                        ? 'border-primary bg-primary/5 shadow-frost'
+                                        : 'border-slate-200 hover:border-primary/30'
+                                    }`}
+                            >
+                                <div className="text-3xl mb-3">🎤</div>
+                                <h4 className="font-semibold text-text mb-1">Audio</h4>
+                                <p className="text-sm text-text-secondary">Speak your answers</p>
+                            </button>
+
+                            {/* Video Mode */}
+                            <button
+                                onClick={() => setAnswerMode('video')}
+                                className={`p-6 rounded-xl border-2 transition-all duration-300 text-left relative
+                                    ${answerMode === 'video'
+                                        ? 'border-accent bg-accent/5 shadow-frost'
+                                        : 'border-slate-200 hover:border-accent/30'
+                                    }`}
+                            >
+                                <div className="absolute top-2 right-2 px-2 py-0.5 bg-accent text-white text-xs font-medium rounded-full">
+                                    Full Analysis
+                                </div>
+                                <div className="text-3xl mb-3">🎥</div>
+                                <h4 className="font-semibold text-text mb-1">Audio + Video</h4>
+                                <p className="text-sm text-text-secondary">Complete behavioral analysis</p>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Quinn Tone Selection */}
+                <div className="max-w-6xl mx-auto mt-8">
+                    <div className="glass-card p-6">
+                        <h3 className="text-lg font-semibold text-text mb-6 text-center">
+                            Quinn's Coaching Style
+                        </h3>
+
+                        <div className="grid sm:grid-cols-2 gap-4 max-w-2xl mx-auto">
+                            <button
+                                onClick={() => setQuinnTone('SUPPORTIVE')}
+                                className={`p-6 rounded-xl border-2 transition-all duration-300
+                                    ${quinnTone === 'SUPPORTIVE'
+                                        ? 'border-primary bg-primary/5 shadow-frost'
+                                        : 'border-slate-200 hover:border-primary/30'
+                                    }`}
+                            >
+                                <div className="text-3xl mb-3">🤗</div>
+                                <h4 className="font-semibold text-text mb-1">Supportive</h4>
+                                <p className="text-sm text-text-secondary">Warm, encouraging feedback</p>
+                            </button>
+
+                            <button
+                                onClick={() => setQuinnTone('DIRECT')}
+                                className={`p-6 rounded-xl border-2 transition-all duration-300
+                                    ${quinnTone === 'DIRECT'
+                                        ? 'border-primary bg-primary/5 shadow-frost'
+                                        : 'border-slate-200 hover:border-primary/30'
+                                    }`}
+                            >
+                                <div className="text-3xl mb-3">🎯</div>
+                                <h4 className="font-semibold text-text mb-1">Direct</h4>
+                                <p className="text-sm text-text-secondary">Concise, no-nonsense approach</p>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Start Button */}
+                <div className="max-w-md mx-auto mt-12">
                     <button
-                        className="btn btn--primary btn--lg"
                         onClick={handleStartSimulation}
+                        disabled={!canProceed}
+                        className={`w-full py-4 rounded-xl font-semibold text-lg transition-all duration-300
+                            ${canProceed
+                                ? 'btn-cta'
+                                : 'bg-slate-100 text-text-muted cursor-not-allowed'
+                            }`}
                     >
                         Start Simulation →
                     </button>
+                    {!canProceed && (
+                        <p className="text-center text-sm text-text-muted mt-3">
+                            Please select a track and role first
+                        </p>
+                    )}
                 </div>
             </div>
         </div>

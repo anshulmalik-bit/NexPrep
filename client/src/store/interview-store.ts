@@ -72,7 +72,10 @@ export interface InterviewState {
     // Actions
     setTrack: (trackId: string) => void;
     setRole: (roleId: string) => void;
+    setTrackAndRole: (trackId: string, roleId: string) => void;
     setCompany: (companyName: string | null, industryId: string | null, companySizeId: string | null) => void;
+    setCompanyInfo: (companyName: string | undefined, industryId: string | undefined) => void;
+    setResumeData: (resumeText: string | undefined, resumeKeywords: string[] | undefined) => void;
     setQuinnMode: (mode: QuinnMode) => void;
     setResume: (text: string, keywords: string[], status: 'success' | 'partial' | 'failed') => void;
     startSession: (sessionId: string) => void;
@@ -115,6 +118,19 @@ export const useInterviewStore = create<InterviewState>((set) => ({
         companyName,
         industryId,
         companySizeId,
+    }),
+
+    setTrackAndRole: (trackId, roleId) => set({ trackId, roleId }),
+
+    setCompanyInfo: (companyName, industryId) => set({
+        companyName: companyName || null,
+        industryId: industryId || null,
+    }),
+
+    setResumeData: (resumeText, resumeKeywords) => set({
+        resumeText: resumeText || null,
+        resumeKeywords: resumeKeywords || [],
+        resumeParseStatus: resumeText ? 'success' : 'none',
     }),
 
     setQuinnMode: (quinnMode) => set({ quinnMode }),

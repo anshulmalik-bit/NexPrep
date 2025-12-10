@@ -1,9 +1,16 @@
-import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import { useInterviewStore } from '../store/interview-store';
 import { api } from '../services/api';
-import { Button } from '../components/Button';
-import './EvaluationPage.css';
+import { NeuralKnot } from '../components/NeuralKnot';
+import { Confetti } from '../components/Confetti';
+
+interface Slide {
+    id: string;
+    title: string;
+    icon: string;
+    type: 'score' | 'strengths' | 'weaknesses' | 'content' | 'plan' | 'resources' | 'leaderboard';
+}
 
 export function EvaluationPage() {
     const navigate = useNavigate();
@@ -12,26 +19,41 @@ export function EvaluationPage() {
     const [currentSlide, setCurrentSlide] = useState(0);
     const [nickname, setNickname] = useState('');
     const [submitted, setSubmitted] = useState(false);
-    const storyRef = useRef<HTMLDivElement>(null);
-    const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+    const [showConfetti, setShowConfetti] = useState(false);
+    const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
+
+    const slides: Slide[] = [
+        { id: 'score', title: 'Overall Score', icon: '🏆', type: 'score' },
+        { id: 'strengths', title: 'Your Strengths', icon: '💪', type: 'strengths' },
+        { id: 'weaknesses', title: 'Areas to Improve', icon: '🎯', type: 'weaknesses' },
+        { id: 'content', title: 'Content Analysis', icon: '📝', type: 'content' },
+        { id: 'plan', title: 'Improvement Plan', icon: '🚀', type: 'plan' },
+        { id: 'leaderboard', title: 'Leaderboard', icon: '🏅', type: 'leaderboard' },
+    ];
 
     useEffect(() => {
-        const handleResize = () => setIsMobile(window.innerWidth < 768);
+        const handleResize = () => setIsMobile(window.innerWidth < 1024);
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
     useEffect(() => {
         if (!sessionId) {
-            navigate('/tracks');
+            navigate('/choose-path');
             return;
         }
         loadReport();
     }, [sessionId]);
 
+    // Trigger confetti on strengths slide
+    useEffect(() => {
+        if (currentSlide === 1 && !showConfetti) {
+            setTimeout(() => setShowConfetti(true), 500);
+        }
+    }, [currentSlide]);
+
     const loadReport = async () => {
         try {
-            // Load all report chunks
             const [summary, skills, strengths, weaknesses, breakdown, plan] = await Promise.all([
                 api.getReportSummary(sessionId!),
                 api.getReportSkillMatrix(sessionId!),
@@ -76,11 +98,15 @@ export function EvaluationPage() {
         }
     };
 
-    const handleScrollToSlide = (index: number) => {
-        setCurrentSlide(index);
-        if (storyRef.current) {
-            const slideWidth = storyRef.current.offsetWidth;
-            storyRef.current.scrollTo({ left: slideWidth * index, behavior: 'smooth' });
+    const handleNextSlide = () => {
+        if (currentSlide < slides.length - 1) {
+            setCurrentSlide(currentSlide + 1);
+        }
+    };
+
+    const handlePrevSlide = () => {
+        if (currentSlide > 0) {
+            setCurrentSlide(currentSlide - 1);
         }
     };
 
@@ -90,10 +116,12 @@ export function EvaluationPage() {
 
     if (loading) {
         return (
-            <div className="evaluation-page evaluation-page--loading">
-                <div className="container text-center">
-                    <div className="loading-spinner" style={{ width: 48, height: 48, margin: '0 auto' }} />
-                    <p className="mt-6">
+            <div className="min-h-screen bg-canvas flex items-center justify-center pt-[72px]">
+                <div className="text-center">
+                    <div className="w-24 h-24 mx-auto mb-6">
+                        <NeuralKnot size="lg" state="thinking" />
+                    </div>
+                    <p className="text-lg text-text-secondary">
                         {quinnMode === 'SUPPORTIVE'
                             ? 'Quinn is preparing your personalized evaluation...'
                             : 'Crunching numbers...'}
@@ -103,74 +131,84 @@ export function EvaluationPage() {
         );
     }
 
-    // Mobile Story Format
+    // Mobile Story Mode
     if (isMobile) {
-        const slides = [
-            { title: 'Summary', content: report?.summary },
-            { title: 'Strengths', content: report?.strengths },
-            { title: 'Areas to Improve', content: report?.weaknesses },
-            ...(report?.questionBreakdown || []).map((q, i) => ({
-                title: `Q${i + 1} Feedback`,
-                content: q,
-            })),
-            { title: 'Your Plan', content: report?.improvementPlan },
-        ];
-
         return (
-            <div className="evaluation-page evaluation-page--mobile">
-                <div className="story-progress">
-                    {slides.map((_, i) => (
-                        <div
-                            key={i}
-                            className={`story-progress__bar ${i === currentSlide ? 'story-progress__bar--active' : i < currentSlide ? 'story-progress__bar--complete' : ''}`}
-                            onClick={() => handleScrollToSlide(i)}
-                        />
-                    ))}
+            <div className="min-h-screen bg-canvas pt-[72px]">
+                <Confetti trigger={showConfetti} />
+
+                {/* Story Progress */}
+                <div className="fixed top-[72px] left-0 right-0 z-30 px-4 pt-4 bg-canvas">
+                    <div className="flex gap-1.5">
+                        {slides.map((_, i) => (
+                            <button
+                                key={i}
+                                onClick={() => setCurrentSlide(i)}
+                                className={`flex-1 h-1 rounded-full transition-all duration-300
+                                    ${i === currentSlide
+                                        ? 'bg-primary'
+                                        : i < currentSlide
+                                            ? 'bg-accent'
+                                            : 'bg-slate-200'
+                                    }`}
+                            />
+                        ))}
+                    </div>
                 </div>
 
-                <div
-                    ref={storyRef}
-                    className="story-container"
-                    onScroll={(e) => {
-                        const target = e.target as HTMLDivElement;
-                        const newSlide = Math.round(target.scrollLeft / target.offsetWidth);
-                        setCurrentSlide(newSlide);
-                    }}
-                >
-                    {slides.map((slide, i) => (
-                        <div key={i} className="story-page">
-                            <h2 className="story-page__title">{slide.title}</h2>
-                            <div className="story-page__content">
-                                {Array.isArray(slide.content) ? (
-                                    <ul>
-                                        {slide.content.map((item, j) => (
-                                            <li key={j}>{typeof item === 'string' ? item : (item as { feedback?: string; question?: string }).feedback || (item as { feedback?: string; question?: string }).question}</li>
-                                        ))}
-                                    </ul>
-                                ) : typeof slide.content === 'object' && slide.content !== null ? (
-                                    <div className="story-question">
-                                        <p className="story-question__text">{(slide.content as any).question}</p>
-                                        <div className="story-question__score">
-                                            Score: {(slide.content as any).score}/100
-                                        </div>
-                                        <p>{(slide.content as any).feedback}</p>
-                                    </div>
-                                ) : (
-                                    <p>{slide.content}</p>
-                                )}
-                            </div>
-                        </div>
-                    ))}
+                {/* Story Content */}
+                <div className="pt-8 px-4 pb-24">
+                    <div className="story-slide">
+                        <SlideContent
+                            slide={slides[currentSlide]}
+                            report={report}
+                            avgScore={avgScore}
+                            nickname={nickname}
+                            setNickname={setNickname}
+                            submitted={submitted}
+                            onSubmitScore={handleSubmitToLeaderboard}
+                        />
+                    </div>
+                </div>
+
+                {/* Navigation Buttons */}
+                <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/95 backdrop-blur-xl border-t border-slate-100 flex gap-3">
+                    <button
+                        onClick={handlePrevSlide}
+                        disabled={currentSlide === 0}
+                        className={`flex-1 py-3 rounded-xl font-medium transition-all
+                            ${currentSlide === 0
+                                ? 'bg-slate-100 text-text-muted'
+                                : 'border border-slate-200 text-text hover:bg-slate-50'
+                            }`}
+                    >
+                        ← Previous
+                    </button>
+                    {currentSlide < slides.length - 1 ? (
+                        <button
+                            onClick={handleNextSlide}
+                            className="flex-1 btn-cta py-3"
+                        >
+                            Next →
+                        </button>
+                    ) : (
+                        <Link to="/choose-path" className="flex-1 btn-cta py-3 text-center">
+                            Try Again →
+                        </Link>
+                    )}
                 </div>
             </div>
         );
     }
 
-    // Desktop Format
+    // Desktop Dashboard
     return (
-        <div className="evaluation-page">
-            <div className="container">
-                <div className="page-header text-center">
+        <div className="min-h-screen bg-canvas pt-[72px]">
+            <Confetti trigger={showConfetti} />
+
+            <div className="container py-12">
+                {/* Header */}
+                <div className="text-center mb-12">
                     <h1 className="page-title">Your Evaluation Report</h1>
                     <p className="page-subtitle">
                         {quinnMode === 'SUPPORTIVE'
@@ -179,124 +217,306 @@ export function EvaluationPage() {
                     </p>
                 </div>
 
-                <div className="evaluation-score">
-                    <div className="evaluation-score__circle">
-                        <span className="evaluation-score__number">{avgScore}</span>
-                        <span className="evaluation-score__label">Average Score</span>
+                {/* Score Circle */}
+                <div className="flex justify-center mb-12">
+                    <div className="glass-card-strong w-40 h-40 rounded-full flex flex-col items-center justify-center shadow-neural">
+                        <span className="text-5xl font-bold text-gradient">{avgScore}</span>
+                        <span className="text-sm text-text-secondary mt-1">Average Score</span>
                     </div>
                 </div>
 
-                {/* Summary */}
-                <section className="eval-section">
-                    <h2>📝 Summary</h2>
-                    <p>{report?.summary}</p>
-                </section>
+                {/* Three Column Grid */}
+                <div className="grid lg:grid-cols-3 gap-8 mb-12">
+                    {/* Column 1: Strengths & Weaknesses */}
+                    <div className="space-y-6">
+                        <div className="glass-card p-6">
+                            <h3 className="text-lg font-semibold text-text mb-4 flex items-center gap-2">
+                                💪 Strengths
+                            </h3>
+                            <ul className="space-y-2">
+                                {report?.strengths.map((s, i) => (
+                                    <li key={i} className="flex items-start gap-2 text-sm">
+                                        <span className="text-accent mt-0.5">✓</span>
+                                        <span className="text-text-secondary">{s}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
 
-                {/* Skill Matrix */}
-                <section className="eval-section">
-                    <h2>📊 Skill Matrix</h2>
-                    <div className="skill-matrix">
-                        {report?.skillMatrix.map((skill) => (
-                            <div key={skill.skill} className="skill-row">
-                                <span className="skill-row__label">{skill.skill}</span>
-                                <div className="skill-row__bar">
-                                    <div
-                                        className="skill-row__fill"
-                                        style={{ width: `${skill.score}%` }}
+                        <div className="glass-card p-6">
+                            <h3 className="text-lg font-semibold text-text mb-4 flex items-center gap-2">
+                                🎯 Areas to Improve
+                            </h3>
+                            <ul className="space-y-2">
+                                {report?.weaknesses.map((w, i) => (
+                                    <li key={i} className="flex items-start gap-2 text-sm">
+                                        <span className="text-warning mt-0.5">•</span>
+                                        <span className="text-text-secondary">{w}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    </div>
+
+                    {/* Column 2: Skill Matrix & Content */}
+                    <div className="space-y-6">
+                        <div className="glass-card p-6">
+                            <h3 className="text-lg font-semibold text-text mb-4 flex items-center gap-2">
+                                📊 Skill Matrix
+                            </h3>
+                            <div className="space-y-3">
+                                {report?.skillMatrix.map((skill) => (
+                                    <div key={skill.skill}>
+                                        <div className="flex justify-between text-sm mb-1">
+                                            <span className="text-text-secondary">{skill.skill}</span>
+                                            <span className="font-medium text-text">{skill.score}%</span>
+                                        </div>
+                                        <div className="progress-bar">
+                                            <div
+                                                className="progress-bar-fill"
+                                                style={{ width: `${skill.score}%` }}
+                                            />
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="glass-card p-6">
+                            <h3 className="text-lg font-semibold text-text mb-4 flex items-center gap-2">
+                                📝 Summary
+                            </h3>
+                            <p className="text-text-secondary text-sm leading-relaxed">
+                                {report?.summary}
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Column 3: Plan & Leaderboard */}
+                    <div className="space-y-6">
+                        <div className="glass-card p-6">
+                            <h3 className="text-lg font-semibold text-text mb-4 flex items-center gap-2">
+                                🚀 Improvement Plan
+                            </h3>
+                            <ol className="space-y-3">
+                                {report?.improvementPlan.map((step, i) => (
+                                    <li key={i} className="flex items-start gap-3 text-sm">
+                                        <span className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold flex-shrink-0">
+                                            {i + 1}
+                                        </span>
+                                        <span className="text-text-secondary">{step}</span>
+                                    </li>
+                                ))}
+                            </ol>
+                        </div>
+
+                        <div className="glass-card p-6">
+                            <h3 className="text-lg font-semibold text-text mb-4 flex items-center gap-2">
+                                🏅 Join Leaderboard
+                            </h3>
+                            {submitted ? (
+                                <div className="text-center py-4">
+                                    <span className="text-3xl mb-2 block">✅</span>
+                                    <p className="text-sm text-text-secondary mb-4">Score submitted!</p>
+                                    <Link to="/leaderboard" className="text-primary font-medium hover:underline">
+                                        View Leaderboard →
+                                    </Link>
+                                </div>
+                            ) : (
+                                <div className="space-y-3">
+                                    <input
+                                        type="text"
+                                        className="form-input"
+                                        placeholder="Enter nickname..."
+                                        value={nickname}
+                                        onChange={(e) => setNickname(e.target.value)}
+                                        maxLength={20}
                                     />
+                                    <button
+                                        onClick={handleSubmitToLeaderboard}
+                                        disabled={!nickname.trim()}
+                                        className={`w-full py-3 rounded-xl font-medium transition-all
+                                            ${nickname.trim()
+                                                ? 'btn-primary'
+                                                : 'bg-slate-100 text-text-muted cursor-not-allowed'
+                                            }`}
+                                    >
+                                        Submit Score
+                                    </button>
                                 </div>
-                                <span className="skill-row__value">{skill.score}%</span>
-                            </div>
-                        ))}
+                            )}
+                        </div>
                     </div>
-                </section>
-
-                {/* Strengths & Weaknesses */}
-                <div className="eval-grid">
-                    <section className="eval-section eval-section--strengths">
-                        <h2>💪 Strengths</h2>
-                        <ul>
-                            {report?.strengths.map((s, i) => <li key={i}>{s}</li>)}
-                        </ul>
-                    </section>
-                    <section className="eval-section eval-section--weaknesses">
-                        <h2>🎯 Areas to Improve</h2>
-                        <ul>
-                            {report?.weaknesses.map((w, i) => <li key={i}>{w}</li>)}
-                        </ul>
-                    </section>
                 </div>
 
-                {/* Question Breakdown */}
-                <section className="eval-section">
-                    <h2>📋 Question-by-Question Breakdown</h2>
-                    <div className="question-breakdown">
-                        {report?.questionBreakdown.map((q, i) => (
-                            <div key={i} className="breakdown-card">
-                                <div className="breakdown-card__header">
-                                    <span className="breakdown-card__number">Q{i + 1}</span>
-                                    <span className={`breakdown-card__score ${q.score >= 70 ? 'good' : q.score >= 50 ? 'ok' : 'needs-work'}`}>
-                                        {q.score}/100
-                                    </span>
-                                </div>
-                                <p className="breakdown-card__question">{q.question}</p>
-                                <p className="breakdown-card__feedback">{q.feedback}</p>
-                            </div>
-                        ))}
-                    </div>
-                </section>
-
-                {/* Improvement Plan */}
-                <section className="eval-section eval-section--plan">
-                    <h2>🚀 Your Improvement Plan</h2>
-                    <ol>
-                        {report?.improvementPlan.map((step, i) => <li key={i}>{step}</li>)}
-                    </ol>
-                </section>
-
-                {/* Leaderboard Submission */}
-                <section className="eval-section eval-section--leaderboard">
-                    <h2>🏆 Join the Leaderboard</h2>
-                    {submitted ? (
-                        <div className="leaderboard-success">
-                            <p>✅ Score submitted! Check the leaderboard to see your ranking.</p>
-                            <Button to="/leaderboard" variant="secondary">
-                                View Leaderboard
-                            </Button>
-                        </div>
-                    ) : (
-                        <div className="leaderboard-submit">
-                            <p>Enter a nickname to submit your score anonymously.</p>
-                            <div className="leaderboard-submit__form">
-                                <input
-                                    type="text"
-                                    className="form-input"
-                                    placeholder="Your nickname..."
-                                    value={nickname}
-                                    onChange={(e) => setNickname(e.target.value)}
-                                    maxLength={20}
-                                />
-                                <Button
-                                    variant="cta"
-                                    onClick={handleSubmitToLeaderboard}
-                                    disabled={!nickname.trim()}
-                                >
-                                    Submit Score
-                                </Button>
-                            </div>
-                        </div>
-                    )}
-                </section>
-
-                <div className="eval-actions">
-                    <Button to="/tracks" variant="secondary">
-                        Try Another Track
-                    </Button>
-                    <Button to="/" variant="ghost">
+                {/* Actions */}
+                <div className="flex justify-center gap-4">
+                    <Link to="/choose-path" className="btn-cta px-8 py-3">
+                        Try Another Track →
+                    </Link>
+                    <Link to="/" className="btn-ghost px-8 py-3">
                         Back to Home
-                    </Button>
+                    </Link>
                 </div>
             </div>
         </div>
     );
+}
+
+// Slide Content Component
+function SlideContent({
+    slide,
+    report,
+    avgScore,
+    nickname,
+    setNickname,
+    submitted,
+    onSubmitScore
+}: {
+    slide: Slide;
+    report: any;
+    avgScore: number;
+    nickname: string;
+    setNickname: (v: string) => void;
+    submitted: boolean;
+    onSubmitScore: () => void;
+}) {
+    switch (slide.type) {
+        case 'score':
+            return (
+                <div className="text-center py-12">
+                    <div className="w-32 h-32 mx-auto mb-6">
+                        <NeuralKnot size="xl" state="coaching" />
+                    </div>
+                    <div className="glass-card-strong w-36 h-36 rounded-full flex flex-col items-center justify-center mx-auto shadow-neural mb-6">
+                        <span className="text-5xl font-bold text-gradient">{avgScore}</span>
+                        <span className="text-xs text-text-secondary mt-1">Average Score</span>
+                    </div>
+                    <h2 className="text-2xl font-bold text-text mb-2">
+                        {avgScore >= 80 ? 'Excellent Work!' : avgScore >= 60 ? 'Good Job!' : 'Keep Practicing!'}
+                    </h2>
+                    <p className="text-text-secondary">
+                        {report?.summary?.slice(0, 100)}...
+                    </p>
+                </div>
+            );
+
+        case 'strengths':
+            return (
+                <div className="py-8">
+                    <h2 className="text-2xl font-bold text-text mb-6 text-center">💪 Your Strengths</h2>
+                    <div className="space-y-3">
+                        {report?.strengths.map((s: string, i: number) => (
+                            <div key={i} className="glass-card p-4 animate-slide-up" style={{ animationDelay: `${i * 0.1}s` }}>
+                                <div className="flex items-start gap-3">
+                                    <span className="text-accent text-lg">✓</span>
+                                    <p className="text-text">{s}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+
+        case 'weaknesses':
+            return (
+                <div className="py-8">
+                    <h2 className="text-2xl font-bold text-text mb-6 text-center">🎯 Areas to Improve</h2>
+                    <div className="space-y-3">
+                        {report?.weaknesses.map((w: string, i: number) => (
+                            <div key={i} className="glass-card p-4 animate-slide-up" style={{ animationDelay: `${i * 0.1}s` }}>
+                                <div className="flex items-start gap-3">
+                                    <span className="text-warning text-lg">•</span>
+                                    <p className="text-text">{w}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+
+        case 'content':
+            return (
+                <div className="py-8">
+                    <h2 className="text-2xl font-bold text-text mb-6 text-center">📝 Content Analysis</h2>
+                    <div className="space-y-4">
+                        {report?.questionBreakdown?.slice(0, 3).map((q: any, i: number) => (
+                            <div key={i} className="glass-card p-4">
+                                <div className="flex items-center justify-between mb-2">
+                                    <span className="font-medium text-text">Q{i + 1}</span>
+                                    <span className={`px-2 py-1 rounded-full text-xs font-medium
+                                        ${q.score >= 70 ? 'bg-green-100 text-green-700' :
+                                            q.score >= 50 ? 'bg-yellow-100 text-yellow-700' :
+                                                'bg-red-100 text-red-700'}`}>
+                                        {q.score}/100
+                                    </span>
+                                </div>
+                                <p className="text-sm text-text-secondary">{q.feedback}</p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+
+        case 'plan':
+            return (
+                <div className="py-8">
+                    <h2 className="text-2xl font-bold text-text mb-6 text-center">🚀 Your Improvement Plan</h2>
+                    <div className="space-y-4">
+                        {report?.improvementPlan.map((step: string, i: number) => (
+                            <div key={i} className="glass-card p-4 flex items-start gap-4 animate-slide-up" style={{ animationDelay: `${i * 0.1}s` }}>
+                                <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center font-bold flex-shrink-0">
+                                    {i + 1}
+                                </div>
+                                <p className="text-text">{step}</p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+
+        case 'leaderboard':
+            return (
+                <div className="py-8">
+                    <h2 className="text-2xl font-bold text-text mb-6 text-center">🏅 Join the Leaderboard</h2>
+                    {submitted ? (
+                        <div className="glass-card p-8 text-center">
+                            <span className="text-5xl mb-4 block">✅</span>
+                            <p className="text-lg font-medium text-text mb-4">Score submitted!</p>
+                            <Link to="/leaderboard" className="btn-cta inline-block">
+                                View Leaderboard →
+                            </Link>
+                        </div>
+                    ) : (
+                        <div className="glass-card p-6 space-y-4">
+                            <p className="text-text-secondary text-center">
+                                Enter a nickname to submit your score anonymously
+                            </p>
+                            <input
+                                type="text"
+                                className="form-input"
+                                placeholder="Your nickname..."
+                                value={nickname}
+                                onChange={(e) => setNickname(e.target.value)}
+                                maxLength={20}
+                            />
+                            <button
+                                onClick={onSubmitScore}
+                                disabled={!nickname.trim()}
+                                className={`w-full py-3 rounded-xl font-medium transition-all
+                                    ${nickname.trim()
+                                        ? 'btn-cta'
+                                        : 'bg-slate-100 text-text-muted cursor-not-allowed'
+                                    }`}
+                            >
+                                Submit Score
+                            </button>
+                        </div>
+                    )}
+                </div>
+            );
+
+        default:
+            return null;
+    }
 }

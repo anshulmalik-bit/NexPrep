@@ -1,4 +1,5 @@
-import './HowItWorksPage.css';
+import { Link } from 'react-router-dom';
+import { NeuralKnot } from '../components/NeuralKnot';
 
 export function HowItWorksPage() {
     const steps = [
@@ -41,35 +42,55 @@ export function HowItWorksPage() {
     ];
 
     return (
-        <div className="how-it-works-page">
-            <div className="container">
-                <div className="page-header text-center">
-                    <h1 className="page-title">How NexPrep Works</h1>
+        <div className="min-h-screen bg-canvas pt-[72px]">
+            <div className="container py-12 lg:py-20">
+                {/* Header */}
+                <div className="text-center mb-16">
+                    <h1 className="page-title mb-4">How NexPrep Works</h1>
                     <p className="page-subtitle">
                         Six simple steps to interview confidence
                     </p>
                 </div>
 
-                <div className="steps-timeline">
+                {/* Steps Timeline */}
+                <div className="max-w-3xl mx-auto">
                     {steps.map((step, i) => (
-                        <div key={step.number} className="step">
-                            <div className="step__number">{step.icon}</div>
-                            <div className="step__content">
-                                <h3 className="step__title">
-                                    <span className="step__num">{step.number}</span>
-                                    {step.title}
-                                </h3>
-                                <p className="step__description">{step.description}</p>
+                        <div key={step.number} className="relative flex gap-6 pb-12 last:pb-0">
+                            {/* Timeline Line */}
+                            {i < steps.length - 1 && (
+                                <div className="absolute left-7 top-16 w-0.5 h-full bg-gradient-to-b from-primary/30 to-accent/30" />
+                            )}
+
+                            {/* Icon Circle */}
+                            <div className="relative z-10 flex-shrink-0">
+                                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center text-2xl shadow-frost">
+                                    {step.icon}
+                                </div>
                             </div>
-                            {i < steps.length - 1 && <div className="step__connector" />}
+
+                            {/* Content */}
+                            <div className="flex-1 pt-2">
+                                <div className="flex items-center gap-3 mb-2">
+                                    <span className="text-sm font-bold text-primary/60">{step.number}</span>
+                                    <h3 className="text-xl font-bold text-text">{step.title}</h3>
+                                </div>
+                                <p className="text-text-secondary leading-relaxed">{step.description}</p>
+                            </div>
                         </div>
                     ))}
                 </div>
 
-                <div className="how-cta text-center">
-                    <a href="/tracks" className="btn btn--cta btn--lg">
-                        Start Your Simulation →
-                    </a>
+                {/* CTA Section */}
+                <div className="text-center mt-16">
+                    <div className="inline-flex flex-col items-center">
+                        <div className="mb-6">
+                            <NeuralKnot size="md" state="idle" />
+                        </div>
+                        <p className="text-text-secondary mb-6">Ready to practice with Quinn?</p>
+                        <Link to="/choose-path" className="btn-cta px-8 py-4 text-lg rounded-full">
+                            Start Your Simulation →
+                        </Link>
+                    </div>
                 </div>
             </div>
         </div>

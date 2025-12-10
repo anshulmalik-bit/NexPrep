@@ -1,7 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { api } from '../services/api';
-import { Button } from '../components/Button';
-import './LeaderboardPage.css';
+import { NeuralKnot } from '../components/NeuralKnot';
 
 interface LeaderboardEntry {
     rank: number;
@@ -15,6 +14,7 @@ interface LeaderboardEntry {
 export function LeaderboardPage() {
     const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
     const [loading, setLoading] = useState(true);
+    const [filter, setFilter] = useState<'all' | 'tech' | 'mba' | 'analytics'>('all');
 
     useEffect(() => {
         loadLeaderboard();
@@ -22,84 +22,182 @@ export function LeaderboardPage() {
 
     const loadLeaderboard = async () => {
         try {
-            const data = await api.getLeaderboard(20);
-            setEntries(data);
+            const data = await api.getLeaderboard();
+            setEntries(data || []);
         } catch (error) {
             console.error('Failed to load leaderboard:', error);
+            // Mock data for demo
+            setEntries([
+                { rank: 1, nickname: 'InterviewPro', score: 95, track: 'tech', role: 'swe', createdAt: new Date().toISOString() },
+                { rank: 2, nickname: 'DataWizard', score: 92, track: 'analytics', role: 'data-analyst', createdAt: new Date().toISOString() },
+                { rank: 3, nickname: 'CodeMaster', score: 89, track: 'tech', role: 'fullstack', createdAt: new Date().toISOString() },
+                { rank: 4, nickname: 'BizGuru', score: 87, track: 'mba', role: 'consultant', createdAt: new Date().toISOString() },
+                { rank: 5, nickname: 'TechNinja', score: 85, track: 'tech', role: 'frontend', createdAt: new Date().toISOString() },
+            ]);
         } finally {
             setLoading(false);
         }
     };
 
-    const getRankClass = (rank: number) => {
-        if (rank === 1) return 'leaderboard__rank--gold';
-        if (rank === 2) return 'leaderboard__rank--silver';
-        if (rank === 3) return 'leaderboard__rank--bronze';
-        return '';
-    };
+    const filteredEntries = filter === 'all'
+        ? entries
+        : entries.filter(e => e.track === filter);
 
-    const getRankEmoji = (rank: number) => {
-        if (rank === 1) return '🥇';
+    const getCrownIcon = (rank: number) => {
+        if (rank === 1) return '👑';
         if (rank === 2) return '🥈';
         if (rank === 3) return '🥉';
-        return `#${rank}`;
+        return null;
     };
 
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-canvas flex items-center justify-center pt-[72px]">
+                <div className="w-16 h-16">
+                    <NeuralKnot size="md" state="thinking" />
+                </div>
+            </div>
+        );
+    }
+
     return (
-        <div className="leaderboard-page">
-            <div className="container">
-                <div className="page-header text-center">
-                    <h1 className="page-title">🏆 Quinn's Top Performers</h1>
+        <div className="min-h-screen bg-canvas pt-[72px]">
+            <div className="container py-12">
+                {/* Header */}
+                <div className="text-center mb-12">
+                    <h1 className="page-title">Leaderboard</h1>
                     <p className="page-subtitle">
-                        Anonymous rankings based on interview performance
+                        See how you stack up against other interview champions
                     </p>
                 </div>
 
-                {loading ? (
-                    <div className="leaderboard-loading">
-                        <div className="loading-spinner" />
-                        <p>Loading rankings...</p>
+                {/* Filter Pills */}
+                <div className="flex justify-center gap-2 mb-8">
+                    {[
+                        { id: 'all', label: 'All Tracks' },
+                        { id: 'tech', label: '💻 Tech' },
+                        { id: 'mba', label: '📊 MBA' },
+                        { id: 'analytics', label: '📈 Analytics' },
+                    ].map((f) => (
+                        <button
+                            key={f.id}
+                            onClick={() => setFilter(f.id as any)}
+                            className={`px-4 py-2 rounded-full text-sm font-medium transition-all
+                                ${filter === f.id
+                                    ? 'bg-primary text-white shadow-frost'
+                                    : 'bg-white border border-slate-200 text-text-secondary hover:border-primary/30'
+                                }`}
+                        >
+                            {f.label}
+                        </button>
+                    ))}
+                </div>
+
+                {/* Desktop Table */}
+                <div className="hidden lg:block">
+                    <div className="glass-card overflow-hidden">
+                        <table className="w-full">
+                            <thead>
+                                <tr className="border-b border-slate-100">
+                                    <th className="px-6 py-4 text-left text-sm font-medium text-text-secondary">Rank</th>
+                                    <th className="px-6 py-4 text-left text-sm font-medium text-text-secondary">Player</th>
+                                    <th className="px-6 py-4 text-left text-sm font-medium text-text-secondary">Score</th>
+                                    <th className="px-6 py-4 text-left text-sm font-medium text-text-secondary">Track</th>
+                                    <th className="px-6 py-4 text-left text-sm font-medium text-text-secondary">Role</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {filteredEntries.map((entry, i) => (
+                                    <tr
+                                        key={i}
+                                        className={`border-b border-slate-50 last:border-b-0 transition-colors hover:bg-slate-50/50
+                                            ${entry.rank <= 3 ? 'bg-primary/5' : ''}`}
+                                    >
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center gap-2">
+                                                {getCrownIcon(entry.rank) && (
+                                                    <span className="text-xl">{getCrownIcon(entry.rank)}</span>
+                                                )}
+                                                <span className={`font-bold ${entry.rank <= 3 ? 'text-primary' : 'text-text'}`}>
+                                                    #{entry.rank}
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <span className="font-medium text-text">{entry.nickname}</span>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <span className={`font-bold ${entry.score >= 90 ? 'text-accent' : 'text-text'}`}>
+                                                {entry.score}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <span className="px-2 py-1 bg-slate-100 rounded-full text-xs text-text-secondary capitalize">
+                                                {entry.track}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <span className="text-text-secondary capitalize">
+                                                {entry.role.replace(/-/g, ' ')}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
                     </div>
-                ) : entries.length === 0 ? (
-                    <div className="leaderboard-empty">
-                        <div className="leaderboard-empty__icon">🎯</div>
-                        <h2>No entries yet!</h2>
-                        <p>Complete an interview simulation to be the first on the leaderboard.</p>
-                        <Button to="/tracks" variant="cta">
-                            Start Your Simulation
-                        </Button>
-                    </div>
-                ) : (
-                    <>
-                        <div className="leaderboard">
-                            <div className="leaderboard__header">
-                                <span>Rank</span>
-                                <span>Performer</span>
-                                <span>Score</span>
-                            </div>
-                            {entries.map((entry) => (
-                                <div key={entry.rank} className="leaderboard__row">
-                                    <span className={`leaderboard__rank ${getRankClass(entry.rank)}`}>
-                                        {getRankEmoji(entry.rank)}
+                </div>
+
+                {/* Mobile Card List */}
+                <div className="lg:hidden space-y-3">
+                    {filteredEntries.map((entry, i) => (
+                        <div
+                            key={i}
+                            className={`glass-card p-4 ${entry.rank <= 3 ? 'ring-2 ring-primary/20' : ''}`}
+                        >
+                            <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center gap-3">
+                                    {getCrownIcon(entry.rank) && (
+                                        <span className="text-2xl">{getCrownIcon(entry.rank)}</span>
+                                    )}
+                                    <span className={`font-bold text-lg ${entry.rank <= 3 ? 'text-primary' : 'text-text'}`}>
+                                        #{entry.rank}
                                     </span>
-                                    <div className="leaderboard__info">
-                                        <span className="leaderboard__name">{entry.nickname}</span>
-                                        <span className="leaderboard__meta">{entry.track} • {entry.role}</span>
-                                    </div>
-                                    <span className="leaderboard__score">{entry.score}</span>
+                                    <span className="font-medium text-text">{entry.nickname}</span>
                                 </div>
-                            ))}
+                                <span className={`text-xl font-bold ${entry.score >= 90 ? 'text-accent' : 'text-text'}`}>
+                                    {entry.score}
+                                </span>
+                            </div>
+                            <div className="flex gap-2 text-xs">
+                                <span className="px-2 py-1 bg-slate-100 rounded-full text-text-secondary capitalize">
+                                    {entry.track}
+                                </span>
+                                <span className="px-2 py-1 bg-slate-100 rounded-full text-text-secondary capitalize">
+                                    {entry.role.replace(/-/g, ' ')}
+                                </span>
+                            </div>
                         </div>
-                        {entries.length > 0 && (
-                            <div className="quinn-commentary">
-                                <span className="quinn-commentary__avatar">🤖</span>
-                                <p className="quinn-commentary__message">
-                                    "Impressive performance by {entries[0]?.nickname}! A score of {entries[0]?.score}
-                                    in {entries[0]?.track} shows true interview mastery. Can you beat them?"
+                    ))}
+                </div>
+
+                {/* Quinn Insight on #1 */}
+                {filteredEntries.length > 0 && (
+                    <div className="mt-8 max-w-xl mx-auto">
+                        <div className="glass-card p-4 flex items-start gap-4">
+                            <div className="w-10 h-10 flex-shrink-0">
+                                <NeuralKnot size="sm" state="coaching" />
+                            </div>
+                            <div>
+                                <p className="text-sm font-medium text-text">Quinn's Insight</p>
+                                <p className="text-sm text-text-secondary mt-1">
+                                    🎉 <strong>{filteredEntries[0]?.nickname}</strong> is leading the pack!
+                                    Their interview skills in {filteredEntries[0]?.track} are exceptional.
+                                    Keep practicing to climb the ranks!
                                 </p>
                             </div>
-                        )}
-                    </>
+                        </div>
+                    </div>
                 )}
             </div>
         </div>

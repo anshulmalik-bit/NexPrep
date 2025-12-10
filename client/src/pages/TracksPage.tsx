@@ -1,7 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useInterviewStore } from '../store/interview-store';
 import { tracks } from '../data/tracks';
-import './TracksPage.css';
 
 export function TracksPage() {
     const navigate = useNavigate();
@@ -23,50 +22,57 @@ export function TracksPage() {
     };
 
     return (
-        <div className="tracks-page">
-            <div className="container">
-                <div className="tracks-header">
-                    <Link to="/" className="back-link">← Back</Link>
+        <div className="min-h-screen bg-canvas pt-[72px]">
+            <div className="container py-8 lg:py-12">
+                {/* Header */}
+                <div className="text-center mb-10">
+                    <Link
+                        to="/"
+                        className="inline-flex items-center text-text-secondary hover:text-primary transition-colors mb-4"
+                    >
+                        ← Back
+                    </Link>
                     <h1 className="page-title">Choose Your Path</h1>
                 </div>
 
-                <div className="tracks-layout">
-                    <div className="tracks-section">
-                        <h2 className="tracks-section__title">Tracks</h2>
-                        <div className="tracks-grid">
+                <div className="grid lg:grid-cols-2 gap-8 max-w-4xl mx-auto">
+                    {/* Tracks Section */}
+                    <div>
+                        <h2 className="text-lg font-semibold text-text mb-4">Tracks</h2>
+                        <div className="grid grid-cols-2 gap-3">
                             {tracks.map((track) => (
                                 <button
                                     key={track.id}
-                                    className="track-card"
                                     onClick={() => handleSelectTrack(track.id)}
+                                    className="glass-card p-6 text-center hover:shadow-frost-lg hover:border-primary/30 transition-all group"
                                 >
-                                    <div className="track-card__icon">
+                                    <span className="text-3xl block mb-2 group-hover:scale-110 transition-transform">
                                         {trackIcons[track.id] || '📋'}
-                                    </div>
-                                    <span className="track-card__name">{track.name}</span>
+                                    </span>
+                                    <span className="text-sm font-medium text-text">{track.name}</span>
                                 </button>
                             ))}
                         </div>
                     </div>
 
-                    <div className="roles-section">
-                        <h2 className="roles-section__title">Roles</h2>
-                        <p className="roles-section__hint">Select a track to see available roles</p>
-                        <div className="roles-placeholder">
-                            <div className="role-item role-item--placeholder">
-                                <span className="role-check">○</span> Frontend Developer
-                            </div>
-                            <div className="role-item role-item--placeholder">
-                                <span className="role-check">○</span> Backend Developer
-                            </div>
-                            <div className="role-item role-item--placeholder">
-                                <span className="role-check">○</span> Product Manager
-                            </div>
-                            <div className="role-item role-item--placeholder">
-                                <span className="role-check">○</span> And more...
-                            </div>
+                    {/* Roles Preview Section */}
+                    <div className="glass-card p-6">
+                        <h2 className="text-lg font-semibold text-text mb-4">Roles</h2>
+                        <p className="text-text-secondary text-sm mb-4">
+                            Select a track to see available roles
+                        </p>
+                        <div className="space-y-2 opacity-50">
+                            {['Frontend Developer', 'Backend Developer', 'Product Manager', 'And more...'].map((role) => (
+                                <div key={role} className="flex items-center gap-2 text-text-muted text-sm">
+                                    <span className="w-4 h-4 rounded-full border-2 border-slate-300" />
+                                    {role}
+                                </div>
+                            ))}
                         </div>
-                        <button className="btn btn--pill btn--gradient btn--disabled" disabled>
+                        <button
+                            className="btn-primary w-full mt-6 opacity-50 cursor-not-allowed"
+                            disabled
+                        >
                             Next
                         </button>
                     </div>

@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import type { QuinnMode } from '../store/interview-store';
 import { useInterviewStore } from '../store/interview-store';
-import './QuinnModePage.css';
+import { NeuralKnot } from '../components/NeuralKnot';
 
 export function QuinnModePage() {
     const navigate = useNavigate();
@@ -18,48 +18,72 @@ export function QuinnModePage() {
     };
 
     return (
-        <div className="quinn-mode-overlay">
-            <div className="quinn-mode-modal glass-card">
-                <button className="quinn-mode-modal__close" onClick={() => navigate(-1)}>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="glass-card-strong max-w-md w-full p-6 lg:p-8 relative">
+                <button
+                    className="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-text-muted hover:text-text transition-colors"
+                    onClick={() => navigate(-1)}
+                >
                     ✕
                 </button>
 
-                <h2 className="quinn-mode-modal__title">
-                    How do you want Quinn to guide you today?
-                </h2>
+                <div className="text-center mb-6">
+                    <div className="w-16 h-16 mx-auto mb-4">
+                        <NeuralKnot size="md" state="idle" />
+                    </div>
+                    <h2 className="text-xl font-bold text-text">
+                        How do you want Quinn to guide you today?
+                    </h2>
+                </div>
 
-                <div className="quinn-mode-options">
+                <div className="grid gap-3 mb-6">
                     <button
-                        className={`quinn-mode-option quinn-mode-option--supportive ${quinnMode === 'SUPPORTIVE' ? 'quinn-mode-option--selected' : ''}`}
                         onClick={() => handleSelect('SUPPORTIVE')}
+                        className={`p-4 rounded-xl text-left transition-all ${quinnMode === 'SUPPORTIVE'
+                                ? 'ring-2 ring-primary bg-primary/5'
+                                : 'bg-slate-50 hover:bg-slate-100'
+                            }`}
                     >
-                        <div className="quinn-mode-option__icon">
-                            <svg viewBox="0 0 40 40" fill="none">
-                                <path d="M10 25c5-8 15-8 20 0" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
-                            </svg>
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
+                                <span className="text-green-600 text-xl">😊</span>
+                            </div>
+                            <div>
+                                <h3 className="font-semibold text-text">Supportive Quinn</h3>
+                                <p className="text-sm text-text-secondary">Warm, encouraging, gentle feedback.</p>
+                            </div>
+                            {quinnMode === 'SUPPORTIVE' && (
+                                <span className="ml-auto text-primary">✓</span>
+                            )}
                         </div>
-                        <h3>Supportive Quinn</h3>
-                        <p>Warm, encouraging, gentle feedback.</p>
                     </button>
 
                     <button
-                        className={`quinn-mode-option quinn-mode-option--direct ${quinnMode === 'DIRECT' ? 'quinn-mode-option--selected' : ''}`}
                         onClick={() => handleSelect('DIRECT')}
+                        className={`p-4 rounded-xl text-left transition-all ${quinnMode === 'DIRECT'
+                                ? 'ring-2 ring-primary bg-primary/5'
+                                : 'bg-slate-50 hover:bg-slate-100'
+                            }`}
                     >
-                        <div className="quinn-mode-option__icon">
-                            <svg viewBox="0 0 40 40" fill="none">
-                                <path d="M10 20h20M25 15l5 5-5 5" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-                            </svg>
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center">
+                                <span className="text-orange-600 text-xl">🎯</span>
+                            </div>
+                            <div>
+                                <h3 className="font-semibold text-text">Direct Quinn</h3>
+                                <p className="text-sm text-text-secondary">Dry humor, honest critique, concise.</p>
+                            </div>
+                            {quinnMode === 'DIRECT' && (
+                                <span className="ml-auto text-primary">✓</span>
+                            )}
                         </div>
-                        <h3>Direct Quinn</h3>
-                        <p>Dry humor, honest critique, concise.</p>
                     </button>
                 </div>
 
                 <button
-                    className={`btn btn--primary btn--lg quinn-mode-modal__continue ${!quinnMode ? 'btn--disabled' : ''}`}
-                    disabled={!quinnMode}
                     onClick={handleContinue}
+                    disabled={!quinnMode}
+                    className="btn-cta w-full py-4 rounded-full disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     Continue
                 </button>
