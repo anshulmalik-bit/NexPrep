@@ -1,6 +1,7 @@
 // API service for communicating with the backend
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+// Use relative URL for production (same origin), absolute for local dev
+const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:3001/api');
 
 interface StartInterviewParams {
     trackId: string;
