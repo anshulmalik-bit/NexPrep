@@ -20,7 +20,7 @@ export async function callGemini(
     const { temperature = 0.7, maxOutputTokens = 2048 } = options;
 
     const model: GenerativeModel = genAI.getGenerativeModel({
-        model: 'gemini-1.5-flash',
+        model: 'gemini-2.0-flash',
         generationConfig: {
             temperature,
             maxOutputTokens,
@@ -40,7 +40,7 @@ export async function callGeminiText(
     const { temperature = 0.7, maxOutputTokens = 2048 } = options;
 
     const model: GenerativeModel = genAI.getGenerativeModel({
-        model: 'gemini-1.5-flash',
+        model: 'gemini-2.0-flash',
         generationConfig: {
             temperature,
             maxOutputTokens,
