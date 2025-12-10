@@ -55,8 +55,11 @@ export function InterviewPage() {
         initInterview();
     }, []);
 
+    const [error, setError] = useState<string | null>(null);
+
     const initInterview = async () => {
         setLoading(true);
+        setError(null);
         try {
             const result = await api.startInterview({
                 trackId: trackId || 'tech',
@@ -69,8 +72,8 @@ export function InterviewPage() {
             startSession(result.sessionId);
 
             const greeting = quinnMode === 'SUPPORTIVE'
-                ? `Hello! I'm Quinn, your interview coach. Ready to practice for your ${roleId} role? Let's make this fun and productive! 🚀`
-                : `Quinn here. ${roleId} interview practice. Let's get started.`;
+                ? `Hello! I'm Quinn, your interview coach. Ready to practice for your ${roleId || 'frontend'} role? Let's make this fun and productive! 🚀`
+                : `Quinn here. ${roleId || 'frontend'} interview practice. Let's get started.`;
 
             setMessages([{
                 id: '1',
@@ -80,8 +83,15 @@ export function InterviewPage() {
             }]);
 
             await fetchNextQuestion(result.sessionId);
-        } catch (error) {
-            console.error('Failed to start interview:', error);
+        } catch (err) {
+            console.error('Failed to start interview:', err);
+            setError('Failed to start interview. Please check your connection and try again.');
+            setMessages([{
+                id: '1',
+                type: 'system',
+                content: '⚠️ Could not connect to the server. Please refresh the page to try again.',
+                timestamp: new Date()
+            }]);
         } finally {
             setLoading(false);
         }
