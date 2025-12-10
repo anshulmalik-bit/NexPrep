@@ -101,8 +101,11 @@ interviewRouter.post('/question', async (req, res) => {
             competencyType: question.competencyType,
         });
 
+        const totalQuestions = 5; // Configurable limit
         res.json({
             questionId,
+            questionNumber,
+            totalQuestions,
             ...question,
         });
     } catch (error) {
@@ -141,7 +144,17 @@ interviewRouter.post('/answer', async (req, res) => {
             evaluation,
         });
 
-        res.json(evaluation);
+        // Generate feedback summary for chat display
+        const feedbackMessage = evaluation.score >= 80
+            ? `Great answer! Score: ${evaluation.score}/100. ${evaluation.strengths[0] || 'Well structured response.'}`
+            : evaluation.score >= 60
+                ? `Good effort! Score: ${evaluation.score}/100. ${evaluation.weaknesses[0] || 'Consider adding more specific examples.'}`
+                : `Score: ${evaluation.score}/100. ${evaluation.suggestedStructure || 'Try to be more specific.'}`;
+
+        res.json({
+            ...evaluation,
+            feedback: feedbackMessage,
+        });
     } catch (error) {
         console.error('Error evaluating answer:', error);
         res.status(500).json({ error: 'Failed to evaluate answer' });
