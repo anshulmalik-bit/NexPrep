@@ -7,7 +7,7 @@ import './InterviewSetupPage.css';
 
 export function InterviewSetupPage() {
     const navigate = useNavigate();
-    const { trackId, roleId, setCompany, setResume, quinnMode } = useInterviewStore();
+    const { trackId: _trackId, roleId: _roleId, setCompany, setResume, quinnMode } = useInterviewStore();
     const [companySearch, setCompanySearch] = useState('');
     const [isDragging, setIsDragging] = useState(false);
     const [uploadStatus, setUploadStatus] = useState<'idle' | 'uploading' | 'success' | 'error'>('idle');

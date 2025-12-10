@@ -14,6 +14,9 @@ interface StartInterviewParams {
 
 interface QuestionResponse {
     question: string;
+    questionId: string;
+    questionNumber: number;
+    totalQuestions: number;
     competencyType: 'behavioral' | 'technical' | 'communication' | 'role-specific';
     difficulty: 'easy' | 'medium' | 'hard';
     hintsAvailable: boolean;
@@ -21,6 +24,7 @@ interface QuestionResponse {
 
 interface EvaluationResponse {
     score: number;
+    feedback: string;
     strengths: string[];
     weaknesses: string[];
     missingElements: string[];

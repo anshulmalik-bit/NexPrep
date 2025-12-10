@@ -91,7 +91,14 @@ export function InterviewPage() {
         setIsTyping(true);
         try {
             const result = await api.getQuestion(sid);
-            setQuestion(result.question, result.questionNumber, result.totalQuestions);
+            // Create a Question object from the API response
+            setQuestion({
+                id: result.questionId,
+                text: result.question,
+                competencyType: result.competencyType,
+                difficulty: result.difficulty,
+                hintsAvailable: result.hintsAvailable
+            });
 
             setMessages(prev => [...prev, {
                 id: Date.now().toString(),
@@ -121,17 +128,19 @@ export function InterviewPage() {
 
         setIsTyping(true);
         try {
-            const result = await api.submitAnswer(sessionId, currentQuestion, answer);
+            const questionId = currentQuestion.id;
+            const result = await api.submitAnswer(sessionId, questionId, answer);
 
             setMessages(prev => [...prev, {
                 id: Date.now().toString(),
                 type: 'quinn',
-                content: result.feedback,
+                content: result.feedback || `Score: ${result.score}/100`,
                 timestamp: new Date()
             }]);
 
             submitAnswer({
-                question: currentQuestion,
+                questionId: currentQuestion.id,
+                question: currentQuestion.text,
                 answer,
                 evaluation: result
             });
@@ -169,7 +178,7 @@ export function InterviewPage() {
 
         setIsTyping(true);
         try {
-            const result = await api.getHint(sessionId, currentQuestion);
+            const result = await api.getHint(sessionId, currentQuestion.id);
             setMessages(prev => [...prev, {
                 id: Date.now().toString(),
                 type: 'quinn',
