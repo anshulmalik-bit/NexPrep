@@ -23,7 +23,7 @@ export function Navbar() {
 
     return (
         <>
-            <nav className="fixed top-0 left-0 right-0 z-50 bg-white/92 backdrop-blur-[10px] border-b border-slate-100 shadow-frost">
+            <nav className="fixed top-0 left-0 right-0 z-[var(--z-sticky)] bg-white/92 backdrop-blur-[10px] border-b border-slate-100 shadow-frost" style={{ zIndex: 'var(--z-sticky)' }}>
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex items-center justify-between h-[72px]">
                         {/* Logo */}
@@ -99,7 +99,7 @@ export function Navbar() {
                 </div>
 
                 {/* Mobile Menu Drawer */}
-                <div className={`lg:hidden fixed inset-0 top-[72px] z-40 transition-all duration-300 ${isOpen ? 'visible' : 'invisible'}`}>
+                <div className={`lg:hidden fixed inset-0 top-[72px] transition-all duration-300 ${isOpen ? 'visible' : 'invisible'}`} style={{ zIndex: 'var(--z-modal-backdrop)' }}>
                     <div
                         className={`absolute inset-0 bg-black/20 backdrop-blur-sm transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0'}`}
                         onClick={() => setIsOpen(false)}
@@ -137,7 +137,8 @@ export function Navbar() {
             {/* Login Modal */}
             {showLogin && (
                 <div
-                    className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fade-in"
+                    className="fixed inset-0 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fade-in"
+                    style={{ zIndex: 'var(--z-modal)' }}
                     onClick={() => setShowLogin(false)}
                 >
                     <div

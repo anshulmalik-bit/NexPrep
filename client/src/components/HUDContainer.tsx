@@ -82,8 +82,9 @@ export const HUDContainer: React.FC = () => {
         return (
             <button
                 onClick={toggleHud}
-                className="fixed bottom-4 right-4 z-50 p-3 bg-surface rounded-full shadow-frost-lg
+                className="fixed bottom-4 right-4 p-3 bg-surface rounded-full shadow-frost-lg
                          hover:shadow-neural transition-all duration-300"
+                style={{ zIndex: 'var(--z-hud)' }}
                 aria-label="Show HUD"
             >
                 👁️
@@ -108,9 +109,12 @@ export const HUDContainer: React.FC = () => {
     const overall = getOverallStatus();
 
     return (
-        <div className="fixed bottom-4 right-4 z-50 w-64 bg-surface/95 backdrop-blur-frost 
+        <div
+            className="fixed bottom-4 right-4 w-64 bg-surface/95 backdrop-blur-frost 
                        rounded-2xl shadow-frost-lg border border-slate-200 overflow-hidden
-                       transition-all duration-300">
+                       transition-all duration-300"
+            style={{ zIndex: 'var(--z-hud)' }}
+        >
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-2 bg-slate-50 border-b border-slate-100">
                 <span className="text-sm font-medium text-text flex items-center gap-2">

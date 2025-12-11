@@ -61,18 +61,20 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({ children }) => {
         <>
             {/* Backdrop */}
             <div
-                className="fixed inset-0 bg-black/40 backdrop-blur-xs z-40 
+                className="fixed inset-0 bg-black/40 backdrop-blur-xs  
                           animate-fade-in md:hidden"
+                style={{ zIndex: 'var(--z-modal-backdrop)' }}
                 aria-hidden="true"
             />
 
             {/* Sheet */}
             <div
                 ref={sheetRef}
-                className="fixed bottom-0 left-0 right-0 z-50 md:hidden
+                className="fixed bottom-0 left-0 right-0 md:hidden
                           bg-surface rounded-t-3xl shadow-frost-lg
                           max-h-[80vh] overflow-hidden
                           animate-slide-up"
+                style={{ zIndex: 'var(--z-modal)' }}
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="bottom-sheet-title"
