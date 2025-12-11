@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useInterviewStore, useAnswerMode } from '../store/interview-store';
+import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
 
 interface SmartInputProps {
     onSubmit: (answer: string, audioBlob?: Blob, videoBlob?: Blob) => void;
@@ -19,6 +20,15 @@ export const SmartInput: React.FC<SmartInputProps> = ({
     const answerMode = useAnswerMode();
     const { ui, setHintLoading, setAnswerMode } = useInterviewStore();
 
+    // Speech Recognition
+    const {
+        transcript,
+        isListening: _isSpeechActive, // Unused but kept for debugging if needed, or just remove destructuring
+        startListening: startSpeech,
+        stopListening: stopSpeech,
+        resetTranscript
+    } = useSpeechRecognition();
+
     // Local state
     const [textInput, setTextInput] = useState('');
     const [isRecording, setIsRecording] = useState(false);
@@ -29,6 +39,20 @@ export const SmartInput: React.FC<SmartInputProps> = ({
     const chunksRef = useRef<Blob[]>([]);
     const timerRef = useRef<number | null>(null);
 
+    // Ref for latest text input (to avoid stale closures in callbacks)
+    const textInputRef = useRef(textInput);
+
+    // Sync transcript to textInput and update Ref
+    useEffect(() => {
+        if (transcript && isRecording) {
+            setTextInput(transcript);
+        }
+    }, [transcript, isRecording]);
+
+    useEffect(() => {
+        textInputRef.current = textInput;
+    }, [textInput]);
+
     // Cleanup on unmount
     useEffect(() => {
         return () => {
@@ -38,6 +62,7 @@ export const SmartInput: React.FC<SmartInputProps> = ({
             if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
                 mediaRecorderRef.current.stop();
             }
+            stopSpeech();
         };
     }, []);
 
@@ -50,6 +75,11 @@ export const SmartInput: React.FC<SmartInputProps> = ({
 
     // Handle text submission
     const handleTextSubmit = () => {
+        if (isRecording) {
+            stopRecording();
+            return;
+        }
+
         if (textInput.trim() && !disabled) {
             onSubmit(textInput.trim());
             setTextInput('');
@@ -61,15 +91,6 @@ export const SmartInput: React.FC<SmartInputProps> = ({
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             handleTextSubmit();
-        }
-    };
-
-    // Toggle Mode
-    const toggleMode = () => {
-        if (answerMode === 'TEXT') {
-            setAnswerMode('AUDIO');
-        } else {
-            setAnswerMode('TEXT');
         }
     };
 
@@ -100,14 +121,24 @@ export const SmartInput: React.FC<SmartInputProps> = ({
                 // Stop all tracks
                 stream.getTracks().forEach(track => track.stop());
 
+                const finalAnswer = textInputRef.current; // Use Ref for latest value!
+
                 if (answerMode === 'VIDEO') {
-                    onSubmit('', undefined, blob);
+                    onSubmit(finalAnswer, undefined, blob);
                 } else {
-                    onSubmit('', blob);
+                    onSubmit(finalAnswer, blob);
                 }
+
+                // Clear buffers after submit logic triggers
+                resetTranscript();
+                setTextInput('');
             };
 
             mediaRecorder.start();
+
+            // Start speech recognition separately
+            startSpeech();
+
             setIsRecording(true);
             setRecordingTime(0);
 
@@ -127,6 +158,7 @@ export const SmartInput: React.FC<SmartInputProps> = ({
     const stopRecording = () => {
         if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
             mediaRecorderRef.current.stop();
+            stopSpeech(); // Stop transcription
             setIsRecording(false);
 
             if (timerRef.current) {
@@ -143,88 +175,66 @@ export const SmartInput: React.FC<SmartInputProps> = ({
         <div className="w-full bg-white rounded-2xl border border-slate-300 shadow-sm overflow-hidden transition-all duration-300 hover:shadow-md">
             {/* Input Area */}
             <div className="p-4">
-                {answerMode === 'TEXT' ? (
-                    // Text Input
-                    <div className="relative">
-                        <textarea
-                            value={textInput}
-                            onChange={(e) => setTextInput(e.target.value)}
-                            onKeyPress={handleKeyPress}
-                            placeholder={placeholder}
-                            disabled={disabled}
-                            rows={3}
-                            className="w-full pr-12 bg-transparent text-gray-900 placeholder-gray-400 border-none resize-none focus:ring-0 text-base"
-                        />
-                        {/* Mic Toggle placed inside text area top-right or bottom-right? 
-                             Let's keep controls separate below for cleaner look per requirement "Mic button MUST Exist" */}
+                <div className="relative">
+                    <textarea
+                        value={textInput}
+                        onChange={(e) => setTextInput(e.target.value)}
+                        onKeyPress={handleKeyPress}
+                        placeholder={answerMode === 'TEXT' ? placeholder : isRecording ? "Listening..." : "Tap the mic to start speaking..."}
+                        disabled={disabled || (isRecording && answerMode !== 'TEXT')}
+                        rows={3}
+                        className="w-full pr-12 bg-transparent text-gray-900 placeholder-gray-400 border-none resize-none focus:ring-0 text-base"
+                    />
 
-                        <div className="flex justify-between items-center mt-3 pt-3 border-t border-slate-100">
-                            <div className="flex items-center gap-2">
+                    {/* Controls Area */}
+                    <div className="flex justify-end items-center mt-2 pt-2 border-t border-slate-100">
+                        {/* Recording Status (Left side) */}
+                        <div className="flex-1">
+                            {isRecording && (
+                                <div className="flex items-center gap-2 animate-pulse">
+                                    <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+                                    <span className="text-xs font-semibold text-red-500">
+                                        Recording {formatTime(recordingTime)}
+                                    </span>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="flex items-center gap-3">
+                            {/* Mic Button - Always visible */}
+                            <div className="relative">
+                                {isRecording && (
+                                    <span className="absolute inset-0 rounded-full bg-red-400 animate-ping opacity-75"></span>
+                                )}
                                 <button
-                                    onClick={toggleMode}
-                                    className="p-2 rounded-full text-gray-500 hover:bg-slate-100 hover:text-indigo-600 transition-colors"
-                                    title="Switch to Voice Mode"
+                                    onClick={isRecording ? stopRecording : startRecording}
+                                    disabled={disabled}
+                                    className={`relative w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200
+                                            ${isRecording
+                                            ? 'bg-red-500 text-white shadow-red-200'
+                                            : 'bg-slate-100 text-gray-600 hover:bg-indigo-50 hover:text-indigo-600'}
+                                            active:scale-95`}
+                                    title={isRecording ? "Stop Recording" : "Start Recording"}
                                 >
-                                    🎤
+                                    <span className="text-lg">
+                                        {isRecording ? '⏹' : '🎤'}
+                                    </span>
                                 </button>
-                                <span className="text-xs text-gray-400 hidden sm:inline">Switch to Voice</span>
                             </div>
 
                             <button
                                 onClick={handleTextSubmit}
-                                disabled={disabled || !textInput.trim()}
+                                disabled={disabled || (!textInput.trim() && !isRecording)}
                                 className="px-6 py-2 bg-primary text-white rounded-lg font-medium text-sm
-                                         hover:bg-primary-dark transition-colors duration-200
-                                         disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                                            hover:bg-primary-dark transition-colors duration-200
+                                            disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
                             >
                                 Send
                             </button>
                         </div>
                     </div>
-                ) : (
-                    // Audio/Video Recording
-                    <div className="flex items-center justify-between px-2 py-1">
-                        <div className="flex items-center gap-4">
-                            <button
-                                onClick={toggleMode}
-                                disabled={isRecording}
-                                className="p-2 rounded-full text-indigo-600 bg-indigo-50 hover:bg-indigo-100 transition-colors"
-                                title="Switch to Text Mode"
-                            >
-                                📝
-                            </button>
-
-                            <div className="flex flex-col">
-                                <span className="text-sm font-semibold text-gray-900">
-                                    {isRecording ? 'Recording...' : 'Voice Mode'}
-                                </span>
-                                <span className="text-xs text-gray-500">
-                                    {isRecording ? formatTime(recordingTime) : 'Tap mic to speak'}
-                                </span>
-                            </div>
-                        </div>
-
-                        {/* Main Mic Button */}
-                        <div className="relative">
-                            {isRecording && (
-                                <span className="absolute inset-0 rounded-full bg-red-400 animate-ping opacity-75"></span>
-                            )}
-                            <button
-                                onClick={isRecording ? stopRecording : startRecording}
-                                disabled={disabled}
-                                className={`relative w-12 h-12 rounded-full flex items-center justify-center transition-all duration-200
-                                          ${isRecording
-                                        ? 'bg-red-500 text-white shadow-red-200'
-                                        : 'bg-primary text-white shadow-frost-lg'}
-                                          shadow-lg hover:scale-105 active:scale-95`}
-                            >
-                                <span className="text-xl">
-                                    {isRecording ? '⏹' : '🎤'}
-                                </span>
-                            </button>
-                        </div>
-                    </div>
-                )}
+                </div>
             </div>
 
             {/* Hint Button (Subtle at bottom) */}

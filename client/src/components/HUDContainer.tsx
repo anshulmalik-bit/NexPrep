@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { useInterviewStore, useLiveMetrics, useUIState, useCalibration, usePermissions } from '../store/interview-store';
+import { useFaceMesh } from '../hooks/useFaceMesh';
 
 /**
  * HUD Camera Module
@@ -14,7 +15,7 @@ export const HUDContainer: React.FC = () => {
     const ui = useUIState();
     const calibration = useCalibration();
     const permissions = usePermissions();
-    const { toggleHud } = useInterviewStore();
+    const { toggleHud, updatePacing, updateVolume } = useInterviewStore();
 
     // Initialize camera stream
     useEffect(() => {
@@ -24,14 +25,11 @@ export const HUDContainer: React.FC = () => {
 
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({
-                    video: { width: { ideal: 320 }, height: { ideal: 180 } }
+                    video: { width: { ideal: 640 }, height: { ideal: 480 } }
                 });
                 streamRef.current = stream;
-
-                if (videoRef.current) {
-                    videoRef.current.srcObject = stream;
-                    setStreamActive(true);
-                }
+                setStreamActive(true);
+                // Video element will render after state update
             } catch (error) {
                 console.error('Failed to access camera for HUD:', error);
                 setStreamActive(false);
@@ -43,7 +41,7 @@ export const HUDContainer: React.FC = () => {
         }
 
         return () => {
-            // Cleanup stream when component unmounts or HUD is hidden
+            // Cleanup stream
             if (streamRef.current) {
                 streamRef.current.getTracks().forEach(track => track.stop());
                 streamRef.current = null;
@@ -51,6 +49,33 @@ export const HUDContainer: React.FC = () => {
             }
         };
     }, [ui.hudVisible, permissions.camera]);
+
+    // Attach stream to video element once it mounts
+    useEffect(() => {
+        if (streamActive && videoRef.current && streamRef.current) {
+            videoRef.current.srcObject = streamRef.current;
+        }
+    }, [streamActive]);
+
+    // REAL VIDEO ANALYSIS with MediaPipe FaceMesh
+    useFaceMesh({
+        videoElement: videoRef.current,
+        enabled: streamActive
+    });
+
+    // Simulate Pacing and Volume (audio analysis not implemented yet)
+    useEffect(() => {
+        if (!streamActive) return;
+
+        const interval = setInterval(() => {
+            // Pacing and Volume still simulated (requires audio analysis)
+            const paceNoise = Math.floor(Math.random() * 10) - 5;
+            updatePacing(Math.max(30, Math.min(90, 55 + paceNoise)));
+            updateVolume(Math.floor(Math.random() * 60) + 40);
+        }, 2000);
+
+        return () => clearInterval(interval);
+    }, [streamActive, updatePacing, updateVolume]);
 
     // Don't render if HUD is hidden
     if (!ui.hudVisible) {
