@@ -1,43 +1,25 @@
-import { callGemini } from './gemini.js';
-import { buildQuinnCorePrompt } from './quinn-core.js';
+import { LLMFactory } from './llm/factory.js';
 export async function generateHint(input) {
     const { question, quinnMode, role } = input;
-    const prompt = `
-${buildQuinnCorePrompt(quinnMode)}
+    const tone = quinnMode === 'SUPPORTIVE' ? 'Helpful' : 'Direct';
+    const prompt = `Role: Interview Coach.
+Task: Provide a structural hint for this question (do not answer it).
+Question: "${question}" (Role: ${role})
+Tone: ${tone}.
+Rules: No direct answers. Only frameworks/cues.
 
-A candidate is stuck on this interview question and needs a hint.
-
-QUESTION: "${question}"
-ROLE: ${role}
-
-CRITICAL RULES:
-1. DO NOT provide the answer or content for the answer
-2. DO NOT rewrite or paraphrase what they should say
-3. ONLY provide frameworks, structures, or reflective cues
-4. Examples of good hints:
-   - "Consider using the STAR method: Situation, Task, Action, Result"
-   - "Think about a time when you had to balance competing priorities"
-   - "What metrics would show success in this situation?"
-   - "Consider the 'why' behind the question"
-5. Keep it brief but helpful
-
-OUTPUT JSON SCHEMA:
+Required JSON Output:
 {
-  "hint": "Your structural hint or framework suggestion"
-}
-
-Generate the hint:
-`;
-    const response = await callGemini(prompt, { temperature: 0.3 });
+  "hint": "<short structural hint>"
+}`;
     try {
-        const parsed = JSON.parse(response);
-        return {
-            hint: parsed.hint,
-        };
+        const provider = LLMFactory.getProvider();
+        const parsed = await provider.generateJson(prompt, { temperature: 0.3, maxOutputTokens: 128 });
+        return { hint: parsed.hint };
     }
     catch (error) {
         return {
-            hint: 'Try using the STAR method: Situation, Task, Action, Result. Structure your answer to show clear impact.',
+            hint: 'Structure your answer using the STAR method: Situation, Task, Action, Result.',
         };
     }
 }

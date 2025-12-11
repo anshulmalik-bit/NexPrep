@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import NeuralKnot from '../components/studio/NeuralKnot';
 
+
 export function HomePage() {
     return (
         <div className="min-h-screen bg-canvas pt-[72px]">
@@ -41,7 +42,14 @@ export function HomePage() {
                         {/* Right: Quinn Illustration */}
                         <div className="flex-1 flex justify-center lg:justify-end">
                             {/* Neural Knot - directly rendered */}
-                            <NeuralKnot state="intro" />
+                            <div className="relative">
+                                <NeuralKnot state="intro" />
+                                <div className="absolute top-0 right-0 md:-top-6 md:-right-6 bg-white px-4 py-2 md:px-6 md:py-3 rounded-tr-2xl rounded-tl-2xl rounded-br-2xl shadow-xl animate-bounce z-10" style={{ animationDuration: '3s' }}>
+                                    <span className="text-xl md:text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">
+                                        Hi! 👋
+                                    </span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -170,50 +178,7 @@ export function HomePage() {
                 </div>
             </section>
 
-            {/* Footer */}
-            <footer className="py-16 bg-slate-50 border-t border-slate-100">
-                <div className="container">
-                    <div className="grid md:grid-cols-4 gap-12 mb-12">
-                        {/* Brand */}
-                        <div className="md:col-span-2">
-                            <div className="flex items-center gap-3 mb-4">
-                                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-primary-light flex items-center justify-center shadow-frost">
-                                    <span className="text-white font-bold">N</span>
-                                </div>
-                                <span className="font-heading font-bold text-xl">
-                                    <span className="text-primary">Nex</span>Prep
-                                </span>
-                            </div>
-                            <p className="text-text-secondary max-w-sm">
-                                Train Smarter. Feel Confident. Your AI-powered interview preparation platform.
-                            </p>
-                        </div>
 
-                        {/* Links */}
-                        <div>
-                            <h5 className="font-bold text-text mb-4">Product</h5>
-                            <ul className="space-y-3">
-                                <li><Link to="/choose-path" className="text-text-secondary hover:text-primary transition-colors">Choose Path</Link></li>
-                                <li><Link to="/leaderboard" className="text-text-secondary hover:text-primary transition-colors">Leaderboard</Link></li>
-                                <li><Link to="/resources" className="text-text-secondary hover:text-primary transition-colors">Resources</Link></li>
-                            </ul>
-                        </div>
-
-                        <div>
-                            <h5 className="font-bold text-text mb-4">Company</h5>
-                            <ul className="space-y-3">
-                                <li><Link to="/about" className="text-text-secondary hover:text-primary transition-colors">About</Link></li>
-                                <li><Link to="/contact" className="text-text-secondary hover:text-primary transition-colors">Contact</Link></li>
-                                <li><Link to="/privacy" className="text-text-secondary hover:text-primary transition-colors">Privacy</Link></li>
-                            </ul>
-                        </div>
-                    </div>
-
-                    <div className="pt-8 border-t border-slate-200 text-center text-text-muted text-sm">
-                        © 2024 NexPrep. All rights reserved.
-                    </div>
-                </div>
-            </footer>
         </div>
     );
 }

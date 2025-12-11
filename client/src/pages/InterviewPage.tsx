@@ -9,6 +9,7 @@ import {
 } from '../store/interview-store';
 import { api, type ContentFeedback } from '../services/api';
 import { getQuinnCompletion } from '../services/quinn-messages';
+import { judgeContentHeuristic } from '../services/heuristicJudge';
 import { NeuralKnot } from '../components/NeuralKnot';
 import { SmartInput } from '../components/SmartInput';
 import { HUDContainer } from '../components/HUDContainer';
@@ -243,8 +244,26 @@ export function InterviewPage() {
                 submittedAt: new Date(),
             };
 
-            // Call Content Judge for feedback
+            // 1. INSTANT HEURISTIC FEEDBACK
+            const localResult = judgeContentHeuristic(answer);
+            setCurrentFeedback(localResult);
+
+            const feedbackId = `feedback-${Date.now()}`;
+            const instantMessage = `⚡ **Instant Analysis**\n${localResult.content_strength}\nTip: ${localResult.content_fix}`;
+
+            setMessages(prev => [...prev, {
+                id: feedbackId,
+                type: 'quinn',
+                content: instantMessage,
+                timestamp: new Date()
+            }]);
+
+            // 2. BACKEND JUDGEMENT (Asynchronous)
             try {
+                // We don't await this immediately for the UI to be responsive, 
+                // but we need the result eventually to update the message.
+                // Actually, let's await it but the UI already showed "Instant Analysis"
+
                 const judgeResult = await api.judgeContent({
                     questionId: currentQuestion.id,
                     questionText: currentQuestion.text,
@@ -257,17 +276,16 @@ export function InterviewPage() {
 
                 setCurrentFeedback(judgeResult);
 
-                // Show micro-feedback in chat
-                const feedbackMessage = judgeResult.status === 'OK'
+                // Show micro-feedback in chat - UPDATING the existing message
+                const finalMessage = judgeResult.status === 'OK'
                     ? `✅ **${judgeResult.content_strength}**\n\n💡 ${judgeResult.content_fix}\n\n*Score: ${judgeResult.content_score}/100*`
                     : `🔄 ${judgeResult.content_fix}`;
 
-                setMessages(prev => [...prev, {
-                    id: Date.now().toString(),
-                    type: 'quinn',
-                    content: feedbackMessage,
-                    timestamp: new Date()
-                }]);
+                setMessages(prev => prev.map(msg =>
+                    msg.id === feedbackId
+                        ? { ...msg, content: finalMessage }
+                        : msg
+                ));
 
                 // Save to store with Content Judge evaluation
                 saveAnswer(currentQuestion.id, {
@@ -288,13 +306,12 @@ export function InterviewPage() {
 
             } catch (judgeError) {
                 console.error('Content Judge error:', judgeError);
-                // Fallback to basic feedback
-                setMessages(prev => [...prev, {
-                    id: Date.now().toString(),
-                    type: 'quinn',
-                    content: 'Answer received! Detailed feedback pending...',
-                    timestamp: new Date()
-                }]);
+                // Keep the heuristic result if backend fails or show error
+                setMessages(prev => prev.map(msg =>
+                    msg.id === feedbackId
+                        ? { ...msg, content: `⚠️ Could not reach Quinn cloud. retained local analysis.\n\n${instantMessage}` }
+                        : msg
+                ));
             }
 
             // Demo mode: show completion after judge
@@ -344,6 +361,7 @@ export function InterviewPage() {
                     timestamp: new Date()
                 }]);
 
+                // Navigate to Evaluation
                 setTimeout(() => navigate('/evaluation'), 2000);
             }
         } catch (error) {
@@ -394,7 +412,7 @@ export function InterviewPage() {
     const progress = (questionNumber / totalQuestions) * 100;
 
     return (
-        <div className="min-h-screen bg-canvas pt-[72px] flex flex-col">
+        <div className="min-h-screen bg-[#F9FAFB] pt-[72px] flex flex-col">
             {/* Progress Bar */}
             <div className="sticky top-[72px] z-30 bg-white/95 backdrop-blur-xl border-b border-slate-100">
                 <div className="h-1.5 bg-slate-100">
@@ -426,9 +444,9 @@ export function InterviewPage() {
             </div>
 
             {/* Main Content - 70/30 Split */}
-            <div className="flex-1 flex">
+            <div className="flex-1 flex max-w-[1440px] mx-auto w-full">
                 {/* Chat Section (70%) */}
-                <div className="flex-1 lg:w-[70%] flex flex-col">
+                <div className="flex-1 lg:w-[70%] flex flex-col bg-[#F9FAFB] relative">
                     {/* Messages */}
                     <div className="flex-1 overflow-y-auto p-4 lg:p-8">
                         <div className="max-w-3xl mx-auto space-y-4">
@@ -440,15 +458,15 @@ export function InterviewPage() {
                                         </div>
                                     )}
                                     <div className={`max-w-[80%] ${msg.type === 'quinn'
-                                        ? 'bg-white rounded-2xl rounded-tl-sm px-4 py-3 shadow-frost border border-slate-100'
+                                        ? 'bg-[#4F46E5] text-white rounded-2xl rounded-tl-sm px-5 py-4 shadow-sm'
                                         : msg.type === 'user'
-                                            ? 'bg-primary text-white rounded-2xl rounded-tr-sm px-4 py-3'
+                                            ? 'bg-[#F3F4F6] text-[#111827] rounded-2xl rounded-tr-sm px-5 py-4 shadow-sm border border-slate-200'
                                             : 'bg-slate-100 px-4 py-3 rounded-xl text-text-secondary'
                                         }`}>
                                         {msg.type === 'quinn' && (
-                                            <p className="text-xs font-medium text-primary mb-1">Quinn</p>
+                                            <p className="text-xs font-semibold text-indigo-100 mb-1 tracking-wide">Quinn</p>
                                         )}
-                                        <p className="whitespace-pre-wrap">{msg.content}</p>
+                                        <p className="whitespace-pre-wrap leading-relaxed">{msg.content}</p>
                                     </div>
                                 </div>
                             ))}

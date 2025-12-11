@@ -13,25 +13,30 @@ import { LeaderboardPage } from './pages/LeaderboardPage';
 import { ResourcesPage } from './pages/ResourcesPage';
 import { HowItWorksPage } from './pages/HowItWorksPage';
 import { ContactPage } from './pages/ContactPage';
+import { MainLayout } from './components/MainLayout';
 
 function App() {
   return (
     <BrowserRouter>
       <Navbar />
       <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/how-it-works" element={<HowItWorksPage />} />
-        <Route path="/choose-path" element={<ChoosePathPage />} />
-        <Route path="/tracks" element={<TracksPage />} />
-        <Route path="/tracks/:trackId" element={<RolePage />} />
-        <Route path="/setup" element={<InterviewSetupPage />} />
-        <Route path="/setup/quinn-mode" element={<QuinnModePage />} />
-        <Route path="/calibration" element={<CalibrationPage />} />
+        <Route element={<MainLayout />}>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/how-it-works" element={<HowItWorksPage />} />
+          <Route path="/choose-path" element={<ChoosePathPage />} />
+          <Route path="/tracks" element={<TracksPage />} />
+          <Route path="/tracks/:trackId" element={<RolePage />} />
+          <Route path="/setup" element={<InterviewSetupPage />} />
+          <Route path="/setup/quinn-mode" element={<QuinnModePage />} />
+          <Route path="/calibration" element={<CalibrationPage />} />
+          <Route path="/evaluation" element={<EvaluationPage />} />
+          <Route path="/leaderboard" element={<LeaderboardPage />} />
+          <Route path="/resources" element={<ResourcesPage />} />
+          <Route path="/contact" element={<ContactPage />} />
+        </Route>
+
+        {/* Standalone pages (no footer) */}
         <Route path="/interview" element={<InterviewPage />} />
-        <Route path="/evaluation" element={<EvaluationPage />} />
-        <Route path="/leaderboard" element={<LeaderboardPage />} />
-        <Route path="/resources" element={<ResourcesPage />} />
-        <Route path="/contact" element={<ContactPage />} />
       </Routes>
     </BrowserRouter>
   );

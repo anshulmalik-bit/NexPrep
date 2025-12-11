@@ -56,7 +56,8 @@ export function ChoosePathPage() {
                     {/* Left: Track Grid (Desktop) */}
                     <div className="hidden lg:block lg:w-1/2">
                         <h3 className="text-lg font-semibold text-text mb-4">Select Track</h3>
-                        <div className="grid grid-cols-2 gap-4">
+                        <h3 className="text-lg font-semibold text-text mb-4">Select Track</h3>
+                        <div className="grid grid-cols-2 gap-6 p-4 -m-4">
                             {tracks.map((track) => (
                                 <button
                                     key={track.id}
@@ -64,9 +65,9 @@ export function ChoosePathPage() {
                                         setSelectedTrack(track);
                                         setSelectedRole(null);
                                     }}
-                                    className={`glass-card p-6 text-left transition-all duration-300 group
+                                    className={`glass-card p-6 text-left transition-all duration-300 group relative z-0 hover:z-10
                                         ${selectedTrack?.id === track.id
-                                            ? 'ring-2 ring-primary shadow-frost-lg'
+                                            ? 'ring-2 ring-primary shadow-frost-lg z-10'
                                             : 'hover:shadow-frost-lg hover:-translate-y-1'
                                         }`}
                                 >

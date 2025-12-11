@@ -1,6 +1,5 @@
 import { Router } from 'express';
-import { callGeminiText } from '../services/gemini.js';
-import { buildQuinnCorePrompt } from '../services/quinn-core.js';
+import { LLMFactory } from '../services/llm/factory.js';
 export const briefingRouter = Router();
 briefingRouter.post('/', async (req, res) => {
     try {
@@ -10,56 +9,38 @@ briefingRouter.post('/', async (req, res) => {
         }
         const context = companyName
             ? `Company: ${companyName}`
-            : `Industry: ${industryId || 'General'}, Company Size: ${companySizeId || 'Unspecified'}`;
-        const prompt = `
-${buildQuinnCorePrompt(quinnMode)}
-
-Generate a company/industry briefing for a candidate preparing for a ${roleId} interview.
-
-CONTEXT: ${context}
-
-Create a JSON briefing with these sections:
-1. overview - Brief company/industry overview (2-3 sentences)
-2. marketPosition - Current market position and competitors
-3. recentNews - Relevant recent developments or trends
-4. culture - Expected culture and work environment
-5. roleExpectations - What they likely want from a ${roleId}
-6. quinnPerspective - Quinn's personal insight/advice in character
-
-OUTPUT FORMAT:
+            : `Industry: ${industryId || 'General'}, Size: ${companySizeId || 'Unspecified'}`;
+        const prompt = `Role: Corporate Strategy Analyst.
+Task: Briefing for ${roleId}.
+Context: ${context}.
+Output JSON:
 {
-  "overview": "...",
-  "marketPosition": "...",
-  "recentNews": "...",
-  "culture": "...",
-  "roleExpectations": "...",
-  "quinnPerspective": "..."
-}
-
-Generate the briefing:
-`;
-        const response = await callGeminiText(prompt, { temperature: 0.6 });
+  "overview": "<2-3 sentences>",
+  "marketPosition": "<position/competitors>",
+  "recentNews": "<trends>",
+  "culture": "<environment>",
+  "roleExpectations": "<expectations>",
+  "quinnPerspective": "<insight>"
+}`;
         try {
-            // Try to parse as JSON
-            const jsonMatch = response.match(/\{[\s\S]*\}/);
-            if (jsonMatch) {
-                const parsed = JSON.parse(jsonMatch[0]);
-                return res.json(parsed);
-            }
+            const provider = LLMFactory.getProvider();
+            const result = await provider.generateJson(prompt, { temperature: 0.6 });
+            return res.json(result);
         }
-        catch (parseError) {
-            // Fallback structure
+        catch (error) {
+            console.error('LLM Briefing Error', error);
+            // Fallthrough to fallback
         }
         // Fallback response
         res.json({
             overview: `Preparing for ${roleId} role in ${context}.`,
-            marketPosition: 'Research the company\'s market position and competitors before your interview.',
-            recentNews: 'Check recent news and press releases for current company initiatives.',
-            culture: 'Understand the company culture through LinkedIn, Glassdoor, and their careers page.',
-            roleExpectations: `For a ${roleId} position, they typically look for relevant experience and cultural fit.`,
+            marketPosition: 'Research market position.',
+            recentNews: 'Check recent news.',
+            culture: 'Check Glassdoor/LinkedIn.',
+            roleExpectations: `Relevant experience for ${roleId}.`,
             quinnPerspective: quinnMode === 'SUPPORTIVE'
-                ? 'You\'ve got this! Take time to research and come prepared with specific examples.'
-                : 'Do your homework. Show up prepared or don\'t show up at all.',
+                ? 'You got this! Prepare examples.'
+                : 'Do your homework.',
         });
     }
     catch (error) {

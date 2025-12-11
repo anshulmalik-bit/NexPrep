@@ -259,7 +259,7 @@ const initialState = {
     sessionId: null,
     currentQuestion: null,
     questionNumber: 0,
-    totalQuestions: 5,
+    totalQuestions: 6,
     answers: [] as AnswerRecord[],
     isLoading: false,
 

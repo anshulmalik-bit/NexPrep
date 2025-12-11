@@ -1,61 +1,46 @@
-import { callGemini } from './gemini.js';
-import { buildQuinnCorePrompt } from './quinn-core.js';
-// Chunked report generation - each function is a separate API call
+import { LLMFactory } from './llm/factory.js';
+// Helper to get provider
+const getLLM = () => LLMFactory.getProvider();
 export async function generateReportSummary(input) {
-    const { answers, quinnMode, role } = input;
-    const avgScore = answers.reduce((sum, a) => sum + a.evaluation.score, 0) / answers.length;
-    const prompt = `
-${buildQuinnCorePrompt(quinnMode)}
+    const { answers, role } = input;
+    const avgScore = Math.round(answers.reduce((sum, a) => sum + a.evaluation.score, 0) / answers.length);
+    const prompt = `Role: Post-Interview Reporter.
+Task: Summarize performance.
+Context: Role ${role}, Avg Score ${avgScore}/100.
+Observations:
+${answers.map((a, i) => `Q${i + 1}: ${a.evaluation.strengths[0] || 'N/A'}`).join('\n')}
 
-Generate a brief, personalized summary of this candidate's interview performance.
-
-ROLE: ${role}
-AVERAGE SCORE: ${Math.round(avgScore)}/100
-QUESTIONS ANSWERED: ${answers.length}
-
-KEY OBSERVATIONS:
-${answers.map((a, i) => `Q${i + 1} (Score: ${a.evaluation.score}): ${a.evaluation.strengths[0] || 'N/A'}`).join('\n')}
-
-OUTPUT JSON:
-{ "summary": "2-3 sentence personalized summary in Quinn's voice" }
-`;
-    const response = await callGemini(prompt, { temperature: 0.5 });
+Output JSON: { "summary": "<2-3 sentence personalized summary>" }`;
     try {
-        return JSON.parse(response);
+        const result = await getLLM().generateJson(prompt, { temperature: 0.5 });
+        return result;
     }
     catch {
-        return { summary: `Overall interview performance: ${Math.round(avgScore)}/100. Areas of strength and growth identified.` };
+        return { summary: `Overall interview performance: ${avgScore}/100. Areas of strength and growth identified.` };
     }
 }
 export async function generateSkillMatrix(input) {
     const { answers, role } = input;
-    const prompt = `
-Analyze these interview answers for a ${role} position and create a skill matrix.
+    const prompt = `Role: HR Analyst.
+Task: Create skill matrix (5 skills) based on answers for ${role}.
+Scores 0-100.
 
-ANSWERS:
-${answers.map((a, i) => `Q${i + 1}: "${a.answer.substring(0, 200)}..." (Score: ${a.evaluation.score})`).join('\n')}
-
-Create 5 relevant skills for this role and assign a score (0-100) based on demonstrated competency.
-
-OUTPUT JSON:
-{
-  "skillMatrix": [
-    { "skill": "Communication", "score": 75 },
-    { "skill": "Problem Solving", "score": 80 },
-    ...
-  ]
-}
-`;
-    const response = await callGemini(prompt, { temperature: 0.4 });
+Output JSON: { "skillMatrix": [{ "skill": "<name>", "score": <number> }] }`;
     try {
-        return JSON.parse(response);
+        // We really should pass context, but saving tokens. 
+        // Let's pass a very brief digest of answers if possible, or just generate generic based on role + global score
+        // Ideally we pass compressed answers.
+        const answersDigest = answers.map((a, i) => `Q${i + 1} (${a.evaluation.score}): ${a.answer.substring(0, 50)}...`).join('\n');
+        const fullPrompt = `${prompt}\nAnswers:\n${answersDigest}`;
+        const result = await getLLM().generateJson(fullPrompt, { temperature: 0.4 });
+        return result;
     }
     catch {
         return {
             skillMatrix: [
                 { skill: 'Communication', score: 70 },
                 { skill: 'Problem Solving', score: 65 },
-                { skill: 'Technical Knowledge', score: 70 },
+                { skill: 'Technical', score: 70 },
                 { skill: 'Leadership', score: 60 },
                 { skill: 'Adaptability', score: 65 },
             ],
@@ -63,45 +48,26 @@ OUTPUT JSON:
     }
 }
 export async function generateStrengths(input) {
-    const { answers, quinnMode } = input;
-    const allStrengths = answers.flatMap((a) => a.evaluation.strengths);
-    const prompt = `
-${buildQuinnCorePrompt(quinnMode)}
-
-Based on these observed strengths from an interview:
-${allStrengths.join(', ')}
-
-Create 3-4 consolidated, actionable strength statements in Quinn's voice.
-
-OUTPUT JSON:
-{ "strengths": ["strength 1", "strength 2", "strength 3"] }
-`;
-    const response = await callGemini(prompt, { temperature: 0.4 });
+    const { answers } = input;
+    const allStrengths = answers.flatMap((a) => a.evaluation.strengths).slice(0, 10); // Limit input
+    const prompt = `Task: Consolidate strengths into 3-4 bullet points.
+Input: ${allStrengths.join(', ')}
+Output JSON: { "strengths": ["<str1>", "<str2>", "<str3>"] }`;
     try {
-        return JSON.parse(response);
+        return await getLLM().generateJson(prompt, { temperature: 0.4 });
     }
     catch {
         return { strengths: allStrengths.slice(0, 4) };
     }
 }
 export async function generateWeaknesses(input) {
-    const { answers, quinnMode } = input;
-    const allWeaknesses = answers.flatMap((a) => a.evaluation.weaknesses);
-    const prompt = `
-${buildQuinnCorePrompt(quinnMode)}
-
-Based on these areas for improvement from an interview:
-${allWeaknesses.join(', ')}
-
-Create 3-4 consolidated, actionable improvement areas in Quinn's voice.
-Frame them constructively.
-
-OUTPUT JSON:
-{ "weaknesses": ["area 1", "area 2", "area 3"] }
-`;
-    const response = await callGemini(prompt, { temperature: 0.4 });
+    const { answers } = input;
+    const allWeaknesses = answers.flatMap((a) => a.evaluation.weaknesses).slice(0, 10);
+    const prompt = `Task: Consolidate improvements into 3-4 constructive bullet points.
+Input: ${allWeaknesses.join(', ')}
+Output JSON: { "weaknesses": ["<wk1>", "<wk2>", "<wk3>"] }`;
     try {
-        return JSON.parse(response);
+        return await getLLM().generateJson(prompt, { temperature: 0.4 });
     }
     catch {
         return { weaknesses: allWeaknesses.slice(0, 4) };
@@ -120,33 +86,21 @@ export async function generateBreakdown(input) {
     };
 }
 export async function generateImprovementPlan(input) {
-    const { answers, quinnMode, role } = input;
-    const weaknesses = answers.flatMap((a) => a.evaluation.weaknesses);
-    const avgScore = answers.reduce((sum, a) => sum + a.evaluation.score, 0) / answers.length;
-    const prompt = `
-${buildQuinnCorePrompt(quinnMode)}
-
-Create a personalized 4-5 step improvement plan for a ${role} candidate.
-
-AVERAGE SCORE: ${Math.round(avgScore)}/100
-AREAS TO IMPROVE: ${weaknesses.join(', ')}
-
-Make each step specific and actionable. Use Quinn's voice.
-
-OUTPUT JSON:
-{ "improvementPlan": ["Step 1: ...", "Step 2: ...", ...] }
-`;
-    const response = await callGemini(prompt, { temperature: 0.5 });
+    const { answers, role } = input;
+    const weaknesses = answers.flatMap((a) => a.evaluation.weaknesses).slice(0, 5);
+    const prompt = `Task: Create 4-step improvement plan for ${role}.
+Weaknesses: ${weaknesses.join(', ')}
+Output JSON: { "improvementPlan": ["Step 1:...", "Step 2:...", ...] }`;
     try {
-        return JSON.parse(response);
+        return await getLLM().generateJson(prompt, { temperature: 0.5 });
     }
     catch {
         return {
             improvementPlan: [
                 'Practice structuring answers using the STAR method',
-                'Prepare 3-5 specific examples for common behavioral questions',
-                'Research the company culture and values before interviews',
-                'Work on quantifying your achievements with metrics',
+                'Prepare specific examples',
+                'Research company values',
+                'Quantify achievements',
             ],
         };
     }

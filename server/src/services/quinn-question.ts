@@ -1,5 +1,5 @@
-import { callGemini } from './gemini.js';
-import { buildQuinnCorePrompt, QuinnMode } from './quinn-core.js';
+import { LLMFactory } from './llm/factory.js';
+import { QuinnMode } from './quinn-core.js';
 
 interface QuestionGenInput {
     track: string;
@@ -23,56 +23,37 @@ interface QuestionOutput {
 export async function generateQuestion(input: QuestionGenInput): Promise<QuestionOutput> {
     const { track, role, quinnMode, resumeText, companyName, industryId, companySizeId, questionNumber, previousQuestions } = input;
 
-    const contextInfo = companyName
-        ? `Targeting company: ${companyName}`
-        : industryId
-            ? `Industry: ${industryId}, Company Size: ${companySizeId}`
-            : 'General industry context';
+    // Compressed Context Building
+    const companyCtx = companyName ? `Target: ${companyName}` : industryId ? `Industry: ${industryId}` : '';
+    const resumeCtx = resumeText ? `Resume: ${resumeText.substring(0, 300)}...` : '';
+    const prevQs = previousQuestions.length > 0 ? `PrevQs: ${previousQuestions.join('; ')}` : '';
+    const difficulty = questionNumber <= 2 ? 'easy' : questionNumber <= 4 ? 'medium' : 'hard';
 
-    const resumeContext = resumeText
-        ? `The candidate has this background from their resume: ${resumeText.substring(0, 500)}...`
-        : 'No resume provided.';
+    const tone = quinnMode === 'SUPPORTIVE' ? 'Encouraging' : 'Direct';
 
-    const previousQsText = previousQuestions.length > 0
-        ? `Previous questions asked (DO NOT REPEAT): ${previousQuestions.join('; ')}`
-        : 'This is the first question.';
+    // Compressed Prompt for Llama 3
+    // Intentionally minimal to save tokens
+    const prompt = `Role: Interviewer for ${role}.
+Context: ${companyCtx} ${resumeCtx}
+Task: Generate Q#${questionNumber} (${difficulty}, ${track}).
+${prevQs} (Avoid duplicates).
+Tone: ${tone}.
 
-    const difficultyGuidance = questionNumber <= 2 ? 'easy to medium' : questionNumber <= 4 ? 'medium' : 'medium to hard';
-
-    const prompt = `
-${buildQuinnCorePrompt(quinnMode)}
-
-You are generating interview question #${questionNumber} for a candidate.
-
-CONTEXT:
-- Track: ${track}
-- Role: ${role}
-- ${contextInfo}
-- ${resumeContext}
-- ${previousQsText}
-
-REQUIREMENTS:
-1. Generate a realistic interview question for the ${role} position
-2. Difficulty should be ${difficultyGuidance}
-3. Mix competency types: behavioral, technical, communication, role-specific
-4. Make it specific and relevant to the role
-5. DO NOT repeat any previous questions
-
-OUTPUT JSON SCHEMA:
+Required JSON Output:
 {
-  "question": "The interview question text",
-  "competencyType": "behavioral" | "technical" | "communication" | "role-specific",
-  "difficulty": "easy" | "medium" | "hard",
+  "question": "<text>",
+  "competencyType": "<behavioral|technical|communication|role-specific>",
+  "difficulty": "<easy|medium|hard>",
   "hintsAvailable": true
-}
-
-Generate the question now:
-`;
-
-    const response = await callGemini(prompt, { temperature: 0.7 });
+}`;
 
     try {
-        const parsed = JSON.parse(response);
+        const provider = LLMFactory.getProvider();
+        const parsed = await provider.generateJson<QuestionOutput>(prompt, {
+            temperature: 0.7,
+            maxOutputTokens: 256
+        });
+
         return {
             question: parsed.question,
             competencyType: parsed.competencyType || 'behavioral',
@@ -80,9 +61,10 @@ Generate the question now:
             hintsAvailable: parsed.hintsAvailable !== false,
         };
     } catch (error) {
-        // Fallback question
+        console.error('Question Gen Error:', error);
+        // Fallback
         return {
-            question: `Tell me about a challenging situation you faced in a ${role} context and how you handled it.`,
+            question: `Describe a challenge you faced as a ${role} and how you solved it.`,
             competencyType: 'behavioral',
             difficulty: 'medium',
             hintsAvailable: true,
