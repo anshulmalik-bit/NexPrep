@@ -6,6 +6,7 @@ import { interviewRouter } from './routes/interview.js';
 import { resumeRouter } from './routes/resume.js';
 import { briefingRouter } from './routes/briefing.js';
 import { leaderboardRouter } from './routes/leaderboard.js';
+import judgeRouter from './routes/judge.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -22,6 +23,7 @@ app.use('/api/interview', interviewRouter);
 app.use('/api/resume', resumeRouter);
 app.use('/api/briefing', briefingRouter);
 app.use('/api/leaderboard', leaderboardRouter);
+app.use('/api/judge', judgeRouter);
 
 // Health check
 app.get('/api/health', (_req, res) => {

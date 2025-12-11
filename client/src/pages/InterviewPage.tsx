@@ -1,9 +1,18 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useInterviewStore } from '../store/interview-store';
-import { api } from '../services/api';
+import {
+    useInterviewStore,
+    useLiveMetrics,
+    useUIState,
+    useAnswerMode,
+    type AnswerRecord
+} from '../store/interview-store';
+import { api, type ContentFeedback } from '../services/api';
 import { getQuinnCompletion } from '../services/quinn-messages';
 import { NeuralKnot } from '../components/NeuralKnot';
+import { SmartInput } from '../components/SmartInput';
+import { HUDContainer } from '../components/HUDContainer';
+import { BottomSheet } from '../components/BottomSheet';
 
 interface ChatMessage {
     id: string;
@@ -16,22 +25,15 @@ export function InterviewPage() {
     const navigate = useNavigate();
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const [messages, setMessages] = useState<ChatMessage[]>([]);
-    const [userInput, setUserInput] = useState('');
     const [isTyping, setIsTyping] = useState(false);
-    const [panelMode, setPanelMode] = useState<'metrics' | 'frameworks' | 'brief'>('metrics');
-    const [showPanel, setShowPanel] = useState(true);
-    const [hesitationTimer, setHesitationTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
     const [showHintSuggestion, setShowHintSuggestion] = useState(false);
     const [connectionError, setConnectionError] = useState(false);
+    const [, setCurrentFeedback] = useState<ContentFeedback | null>(null);
 
-    const [metrics, setMetrics] = useState({
-        pace: 'Good',
-        fillerWords: 0,
-        silenceDuration: 0,
-        confidence: 'Building',
-        energy: 'Medium',
-        stability: 'Stable'
-    });
+    // Get state from centralized store
+    const liveMetrics = useLiveMetrics();
+    const ui = useUIState();
+    const answerMode = useAnswerMode();
 
     const {
         sessionId,
@@ -46,8 +48,15 @@ export function InterviewPage() {
         isLoading,
         startSession,
         setQuestion,
-        submitAnswer,
+        saveAnswer,
         setLoading,
+        // New store actions
+        setUtilityPanelTab,
+        toggleBottomSheet,
+        setHint,
+        setHintLoading,
+        updatePacing,
+        updateConfidence,
     } = useInterviewStore();
 
     const scrollToBottom = () => {
@@ -62,20 +71,16 @@ export function InterviewPage() {
         initInterview();
     }, []);
 
-    // Hesitation detection
+    // Hesitation detection - now triggers hint via store
     useEffect(() => {
-        if (currentQuestion && !isTyping && !userInput) {
+        if (currentQuestion && !isTyping) {
             const timer = setTimeout(() => {
                 setShowHintSuggestion(true);
             }, 10000); // 10 seconds
-            setHesitationTimer(timer);
+
+            return () => clearTimeout(timer);
         }
-
-        return () => {
-            if (hesitationTimer) clearTimeout(hesitationTimer);
-        };
-    }, [currentQuestion, isTyping, userInput]);
-
+    }, [currentQuestion, isTyping]);
 
     const mockQuestions = [
         "Tell me about a time when you had to learn a new technology quickly. How did you approach it?",
@@ -112,7 +117,6 @@ export function InterviewPage() {
             await fetchNextQuestion(result.sessionId);
         } catch (err) {
             console.error('Failed to start interview, using demo mode:', err);
-            // Start in demo mode
             startSession('demo-session');
 
             const greeting = quinnMode === 'SUPPORTIVE'
@@ -126,7 +130,6 @@ export function InterviewPage() {
                 timestamp: new Date()
             }]);
 
-            // Set first demo question
             setQuestion({
                 id: 'demo-q1',
                 text: mockQuestions[0],
@@ -150,7 +153,6 @@ export function InterviewPage() {
         setIsTyping(true);
         try {
             if (sid === 'demo-session') {
-                // Demo mode - use mock questions
                 const nextIndex = questionNumber;
                 if (nextIndex < mockQuestions.length) {
                     setTimeout(() => {
@@ -191,7 +193,6 @@ export function InterviewPage() {
             }]);
         } catch (error) {
             console.error('Failed to get question, falling back to demo mode:', error);
-            // Fall back to demo question
             const nextIndex = questionNumber;
             if (nextIndex < mockQuestions.length) {
                 setQuestion({
@@ -214,85 +215,107 @@ export function InterviewPage() {
         }
     };
 
-    const handleSubmit = async () => {
-        console.log('handleSubmit called', { userInput, sessionId, currentQuestion });
-        if (!userInput.trim() || !sessionId || !currentQuestion) {
-            console.log('handleSubmit early return - missing required data');
-            return;
-        }
+    // Handle answer submission from SmartInput
+    const handleAnswerSubmit = async (answerText: string, audioBlob?: Blob, videoBlob?: Blob) => {
+        if (!sessionId || !currentQuestion) return;
 
-        const answer = userInput.trim();
-        setUserInput('');
+        const answer = answerText.trim();
         setShowHintSuggestion(false);
 
+        // Add user message to chat
         setMessages(prev => [...prev, {
             id: Date.now().toString(),
             type: 'user',
-            content: answer,
+            content: answer || `[${answerMode} response recorded]`,
             timestamp: new Date()
         }]);
 
         setIsTyping(true);
-        try {
-            // Demo mode handling
-            if (sessionId === 'demo-session') {
-                const mockScore = 60 + Math.floor(Math.random() * 35);
-                const mockFeedback = mockScore >= 80
-                    ? "Great answer! You structured your response well and provided relevant examples. 🌟"
-                    : mockScore >= 65
-                        ? "Good effort! Consider adding more specific examples to strengthen your answer."
-                        : "That's a start. Try using the STAR method (Situation, Task, Action, Result) for more impact.";
 
-                setTimeout(() => {
+        try {
+            // Create answer record for store
+            const answerRecord: AnswerRecord = {
+                questionId: currentQuestion.id,
+                questionText: currentQuestion.text,
+                answerText: answer,
+                audioBlob,
+                videoBlob,
+                submittedAt: new Date(),
+            };
+
+            // Call Content Judge for feedback
+            try {
+                const judgeResult = await api.judgeContent({
+                    questionId: currentQuestion.id,
+                    questionText: currentQuestion.text,
+                    transcript: answer,
+                    role: roleId || 'frontend',
+                    track: trackId || 'tech',
+                    quinnMode: quinnMode || 'SUPPORTIVE',
+                    company: companyName,
+                });
+
+                setCurrentFeedback(judgeResult);
+
+                // Show micro-feedback in chat
+                const feedbackMessage = judgeResult.status === 'OK'
+                    ? `✅ **${judgeResult.content_strength}**\n\n💡 ${judgeResult.content_fix}\n\n*Score: ${judgeResult.content_score}/100*`
+                    : `🔄 ${judgeResult.content_fix}`;
+
+                setMessages(prev => [...prev, {
+                    id: Date.now().toString(),
+                    type: 'quinn',
+                    content: feedbackMessage,
+                    timestamp: new Date()
+                }]);
+
+                // Save to store with Content Judge evaluation
+                saveAnswer(currentQuestion.id, {
+                    ...answerRecord,
+                    evaluation: {
+                        score: judgeResult.content_score,
+                        strengths: [judgeResult.content_strength],
+                        weaknesses: [judgeResult.content_fix],
+                        missingElements: [],
+                        suggestedStructure: judgeResult.content_label,
+                        improvedSampleAnswer: judgeResult.suggested_rewrite || ''
+                    }
+                });
+
+                // Update live metrics
+                updatePacing(judgeResult.content_score >= 70 ? 65 : 35);
+                updateConfidence(judgeResult.content_score);
+
+            } catch (judgeError) {
+                console.error('Content Judge error:', judgeError);
+                // Fallback to basic feedback
+                setMessages(prev => [...prev, {
+                    id: Date.now().toString(),
+                    type: 'quinn',
+                    content: 'Answer received! Detailed feedback pending...',
+                    timestamp: new Date()
+                }]);
+            }
+
+            // Demo mode: show completion after judge
+            if (sessionId === 'demo-session') {
+                if (questionNumber < totalQuestions) {
+                    setTimeout(() => fetchNextQuestion(sessionId), 1500);
+                } else {
+                    const completionMessage = getQuinnCompletion(quinnMode || 'SUPPORTIVE');
                     setMessages(prev => [...prev, {
                         id: Date.now().toString(),
-                        type: 'quinn',
-                        content: `${mockFeedback} (Demo Score: ${mockScore}/100)`,
+                        type: 'system',
+                        content: completionMessage + ' (Demo complete!)',
                         timestamp: new Date()
                     }]);
-
-                    submitAnswer({
-                        questionId: currentQuestion.id,
-                        question: currentQuestion.text,
-                        answer,
-                        evaluation: {
-                            score: mockScore,
-                            strengths: ['Clear communication'],
-                            weaknesses: ['Could use more examples'],
-                            missingElements: [],
-                            suggestedStructure: 'STAR Method',
-                            improvedSampleAnswer: ''
-                        }
-                    });
-
-                    setMetrics({
-                        pace: mockScore >= 80 ? 'Excellent' : mockScore >= 60 ? 'Good' : 'Needs Work',
-                        fillerWords: Math.floor(Math.random() * 5),
-                        silenceDuration: Math.floor(Math.random() * 3),
-                        confidence: mockScore >= 75 ? 'Strong' : 'Building',
-                        energy: mockScore >= 70 ? 'High' : 'Medium',
-                        stability: 'Stable'
-                    });
-
-                    if (questionNumber < totalQuestions) {
-                        setTimeout(() => fetchNextQuestion(sessionId), 1500);
-                    } else {
-                        const completionMessage = getQuinnCompletion(quinnMode || 'SUPPORTIVE');
-                        setMessages(prev => [...prev, {
-                            id: Date.now().toString(),
-                            type: 'system',
-                            content: completionMessage + ' (Demo complete!)',
-                            timestamp: new Date()
-                        }]);
-                    }
-
-                    setIsTyping(false);
-                }, 1500);
+                }
+                setIsTyping(false);
                 return;
             }
 
-            const questionId = currentQuestion.id;
-            const result = await api.submitAnswer(sessionId, questionId, answer);
+            // Real API call
+            const result = await api.submitAnswer(sessionId, currentQuestion.id, answer);
 
             setMessages(prev => [...prev, {
                 id: Date.now().toString(),
@@ -301,22 +324,14 @@ export function InterviewPage() {
                 timestamp: new Date()
             }]);
 
-            submitAnswer({
-                questionId: currentQuestion.id,
-                question: currentQuestion.text,
-                answer,
+            saveAnswer(currentQuestion.id, {
+                ...answerRecord,
                 evaluation: result
             });
 
-            // Update metrics based on score
-            setMetrics({
-                pace: result.score >= 80 ? 'Excellent' : result.score >= 60 ? 'Good' : 'Needs Work',
-                fillerWords: Math.floor(Math.random() * 5),
-                silenceDuration: Math.floor(Math.random() * 3),
-                confidence: result.score >= 75 ? 'Strong' : 'Building',
-                energy: result.score >= 70 ? 'High' : 'Medium',
-                stability: 'Stable'
-            });
+            // Update live metrics based on score
+            updatePacing(result.score >= 70 ? 65 : 35);
+            updateConfidence(result.score);
 
             if (questionNumber < totalQuestions) {
                 setTimeout(() => fetchNextQuestion(sessionId), 1500);
@@ -341,16 +356,18 @@ export function InterviewPage() {
     const handleHint = async () => {
         if (!sessionId || !currentQuestion) return;
         setShowHintSuggestion(false);
+        setHintLoading(true);
 
         setIsTyping(true);
         try {
-            // Demo mode handling
             if (sessionId === 'demo-session') {
                 setTimeout(() => {
+                    const hint = 'Try structuring your answer using the STAR method - describe the Situation, the Task you needed to accomplish, the Action you took, and the Result of your efforts.';
+                    setHint(hint);
                     setMessages(prev => [...prev, {
                         id: Date.now().toString(),
                         type: 'quinn',
-                        content: '💡 Hint: Try structuring your answer using the STAR method - describe the Situation, the Task you needed to accomplish, the Action you took, and the Result of your efforts.',
+                        content: `💡 Hint: ${hint}`,
                         timestamp: new Date()
                     }]);
                     setIsTyping(false);
@@ -359,6 +376,7 @@ export function InterviewPage() {
             }
 
             const result = await api.getHint(sessionId, currentQuestion.id);
+            setHint(result.hint);
             setMessages(prev => [...prev, {
                 id: Date.now().toString(),
                 type: 'quinn',
@@ -367,6 +385,7 @@ export function InterviewPage() {
             }]);
         } catch (error) {
             console.error('Failed to get hint:', error);
+            setHintLoading(false);
         } finally {
             setIsTyping(false);
         }
@@ -378,8 +397,11 @@ export function InterviewPage() {
         <div className="min-h-screen bg-canvas pt-[72px] flex flex-col">
             {/* Progress Bar */}
             <div className="sticky top-[72px] z-30 bg-white/95 backdrop-blur-xl border-b border-slate-100">
-                <div className="progress-bar h-1.5">
-                    <div className="progress-bar-fill bg-accent" style={{ width: `${progress}%` }} />
+                <div className="h-1.5 bg-slate-100">
+                    <div
+                        className="h-full bg-gradient-to-r from-primary to-accent transition-all duration-500"
+                        style={{ width: `${progress}%` }}
+                    />
                 </div>
                 <div className="container py-3 flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -388,6 +410,13 @@ export function InterviewPage() {
                         </div>
                         <span className="text-sm font-medium text-text">
                             Quinn ({quinnMode === 'SUPPORTIVE' ? 'Supportive' : 'Direct'})
+                        </span>
+                        {/* Answer mode indicator */}
+                        <span className={`px-2 py-0.5 rounded-full text-xs ${answerMode === 'TEXT' ? 'bg-primary/10 text-primary' :
+                            answerMode === 'AUDIO' ? 'bg-accent/10 text-accent' :
+                                'bg-red-100 text-red-600'
+                            }`}>
+                            {answerMode === 'TEXT' ? '📝' : answerMode === 'AUDIO' ? '🎤' : '📹'} {answerMode}
                         </span>
                     </div>
                     <span className="text-sm text-text-secondary">
@@ -411,9 +440,9 @@ export function InterviewPage() {
                                         </div>
                                     )}
                                     <div className={`max-w-[80%] ${msg.type === 'quinn'
-                                        ? 'chat-bubble-quinn'
+                                        ? 'bg-white rounded-2xl rounded-tl-sm px-4 py-3 shadow-frost border border-slate-100'
                                         : msg.type === 'user'
-                                            ? 'chat-bubble-user'
+                                            ? 'bg-primary text-white rounded-2xl rounded-tr-sm px-4 py-3'
                                             : 'bg-slate-100 px-4 py-3 rounded-xl text-text-secondary'
                                         }`}>
                                         {msg.type === 'quinn' && (
@@ -429,11 +458,11 @@ export function InterviewPage() {
                                     <div className="w-8 h-8 mr-3">
                                         <NeuralKnot size="sm" state="thinking" />
                                     </div>
-                                    <div className="chat-bubble-quinn">
-                                        <div className="quinn-thinking">
-                                            <div className="quinn-thinking__dot" />
-                                            <div className="quinn-thinking__dot" />
-                                            <div className="quinn-thinking__dot" />
+                                    <div className="bg-white rounded-2xl rounded-tl-sm px-4 py-3 shadow-frost border border-slate-100">
+                                        <div className="flex gap-1">
+                                            <span className="w-2 h-2 bg-primary/40 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                                            <span className="w-2 h-2 bg-primary/40 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                                            <span className="w-2 h-2 bg-primary/40 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                                         </div>
                                     </div>
                                 </div>
@@ -447,7 +476,7 @@ export function InterviewPage() {
                                     </div>
                                     <button
                                         onClick={handleHint}
-                                        className="glass-card px-4 py-3 rounded-xl border border-accent/30 text-sm text-accent hover:bg-accent/5 transition-colors"
+                                        className="bg-accent/5 border border-accent/30 px-4 py-3 rounded-xl text-sm text-accent hover:bg-accent/10 transition-colors"
                                     >
                                         💡 Need help? Click for a hint
                                     </button>
@@ -458,7 +487,7 @@ export function InterviewPage() {
                         </div>
                     </div>
 
-                    {/* Input Area */}
+                    {/* Input Area - Now using SmartInput */}
                     <div className="border-t border-slate-100 bg-white p-4">
                         <div className="max-w-3xl mx-auto">
                             {connectionError ? (
@@ -469,87 +498,90 @@ export function InterviewPage() {
                                             setConnectionError(false);
                                             initInterview();
                                         }}
-                                        className="btn-primary"
+                                        className="px-6 py-2 bg-primary text-white rounded-full font-medium hover:bg-primary-dark transition-colors"
                                     >
                                         🔄 Retry Connection
                                     </button>
                                 </div>
                             ) : (
-                                <div className="flex gap-3">
-                                    <div className="flex-1 relative">
-                                        <textarea
-                                            className="form-input resize-none pr-12"
-                                            placeholder="Type your answer..."
-                                            value={userInput}
-                                            onChange={(e) => {
-                                                setUserInput(e.target.value);
-                                                setShowHintSuggestion(false);
-                                            }}
-                                            onKeyDown={(e) => {
-                                                if (e.key === 'Enter' && !e.shiftKey) {
-                                                    e.preventDefault();
-                                                    handleSubmit();
-                                                }
-                                            }}
-                                            rows={2}
-                                            disabled={isLoading || isTyping}
-                                        />
-                                        <button
-                                            onClick={handleHint}
-                                            disabled={isLoading || isTyping || !currentQuestion}
-                                            className="absolute right-2 bottom-2 p-2 text-text-muted hover:text-accent transition-colors disabled:opacity-50"
-                                            title="Get a hint"
-                                        >
-                                            💡
-                                        </button>
-                                    </div>
-                                    <button
-                                        className="btn-primary px-6"
-                                        onClick={handleSubmit}
-                                        disabled={!userInput.trim() || isLoading || isTyping}
-                                    >
-                                        Send
-                                    </button>
-                                </div>
+                                <SmartInput
+                                    onSubmit={handleAnswerSubmit}
+                                    disabled={isLoading || isTyping || !currentQuestion}
+                                    placeholder="Type your answer..."
+                                />
                             )}
                         </div>
                     </div>
                 </div>
 
-                {/* Utility Panel (30%) */}
-                <div className={`hidden lg:flex flex-col w-[30%] border-l border-slate-100 bg-white/50 ${showPanel ? '' : 'lg:hidden'}`}>
+                {/* Utility Panel (30%) - Desktop */}
+                <div className="hidden lg:flex flex-col w-[30%] border-l border-slate-100 bg-white/50">
                     {/* Panel Tabs */}
                     <div className="flex border-b border-slate-100">
-                        {(['metrics', 'frameworks', 'brief'] as const).map((tab) => (
+                        {(['feedback', 'frameworks', 'mission'] as const).map((tab) => (
                             <button
                                 key={tab}
-                                onClick={() => setPanelMode(tab)}
+                                onClick={() => setUtilityPanelTab(tab)}
                                 className={`flex-1 px-4 py-3 text-sm font-medium capitalize transition-colors
-                                    ${panelMode === tab
+                                    ${ui.utilityPanelTab === tab
                                         ? 'text-primary border-b-2 border-primary bg-primary/5'
                                         : 'text-text-secondary hover:text-text'
                                     }`}
                             >
-                                {tab === 'metrics' ? 'Live Feedback' : tab === 'frameworks' ? 'Frameworks' : 'Mission'}
+                                {tab === 'feedback' ? '📊 Live' : tab === 'frameworks' ? '🧠 Frameworks' : '🎯 Mission'}
                             </button>
                         ))}
                     </div>
 
                     {/* Panel Content */}
                     <div className="flex-1 overflow-y-auto p-6">
-                        {panelMode === 'metrics' && (
+                        {ui.utilityPanelTab === 'feedback' && (
                             <div className="space-y-4">
                                 <h4 className="font-semibold text-text mb-4">Quinn Live Feedback</h4>
 
-                                <MetricRow label="Pace" value={metrics.pace} status={metrics.pace === 'Excellent' ? 'good' : metrics.pace === 'Good' ? 'ok' : 'warn'} />
-                                <MetricRow label="Filler Words" value={`${metrics.fillerWords}`} status={metrics.fillerWords < 3 ? 'good' : 'warn'} />
-                                <MetricRow label="Confidence" value={metrics.confidence} status={metrics.confidence === 'Strong' ? 'good' : 'ok'} />
-                                <MetricRow label="Energy" value={metrics.energy} status={metrics.energy === 'High' ? 'good' : 'ok'} />
-                                <MetricRow label="Stability" value={metrics.stability} status="good" />
+                                <MetricRow
+                                    label="Pace"
+                                    value={liveMetrics.pacing >= 40 && liveMetrics.pacing <= 70 ? 'Good' : liveMetrics.pacing < 40 ? 'Too slow' : 'Too fast'}
+                                    status={liveMetrics.pacing >= 40 && liveMetrics.pacing <= 70 ? 'good' : 'warn'}
+                                />
+                                <MetricRow
+                                    label="Filler Words"
+                                    value={`${liveMetrics.fillerWordCount}`}
+                                    status={liveMetrics.fillerWordCount < 3 ? 'good' : liveMetrics.fillerWordCount < 6 ? 'ok' : 'warn'}
+                                />
+                                <MetricRow
+                                    label="Confidence"
+                                    value={liveMetrics.confidence >= 70 ? 'Strong' : liveMetrics.confidence >= 50 ? 'Building' : 'Needs work'}
+                                    status={liveMetrics.confidence >= 70 ? 'good' : liveMetrics.confidence >= 50 ? 'ok' : 'warn'}
+                                />
+                                <MetricRow
+                                    label="Eye Contact"
+                                    value={liveMetrics.gaze === 'on' ? 'Good' : liveMetrics.gaze === 'off' ? 'Look up' : '—'}
+                                    status={liveMetrics.gaze === 'on' ? 'good' : liveMetrics.gaze === 'off' ? 'warn' : 'ok'}
+                                />
+                                <MetricRow
+                                    label="Posture"
+                                    value={liveMetrics.posture === 'good' ? 'Great' : liveMetrics.posture === 'poor' ? 'Sit up' : '—'}
+                                    status={liveMetrics.posture === 'good' ? 'good' : liveMetrics.posture === 'poor' ? 'warn' : 'ok'}
+                                />
+
+                                {/* Confidence Bar */}
+                                <div className="pt-4 border-t border-slate-100">
+                                    <div className="flex justify-between text-sm mb-2">
+                                        <span className="text-text-muted">Overall Confidence</span>
+                                        <span className="font-medium text-primary">{liveMetrics.confidence}%</span>
+                                    </div>
+                                    <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                                        <div
+                                            className="h-full bg-gradient-to-r from-primary to-accent transition-all duration-500"
+                                            style={{ width: `${liveMetrics.confidence}%` }}
+                                        />
+                                    </div>
+                                </div>
                             </div>
                         )}
 
-                        {panelMode === 'frameworks' && (
+                        {ui.utilityPanelTab === 'frameworks' && (
                             <div className="space-y-4">
                                 <h4 className="font-semibold text-text mb-4">Answer Frameworks</h4>
 
@@ -576,7 +608,7 @@ export function InterviewPage() {
                             </div>
                         )}
 
-                        {panelMode === 'brief' && (
+                        {ui.utilityPanelTab === 'mission' && (
                             <div className="space-y-6">
                                 <h4 className="font-semibold text-text mb-4">Mission Brief</h4>
 
@@ -598,6 +630,11 @@ export function InterviewPage() {
                                 </div>
 
                                 <div>
+                                    <p className="text-xs text-text-muted uppercase tracking-wide mb-1">Answer Mode</p>
+                                    <p className="font-medium text-text">{answerMode}</p>
+                                </div>
+
+                                <div>
                                     <p className="text-xs text-text-muted uppercase tracking-wide mb-1">Competencies</p>
                                     <div className="flex flex-wrap gap-2 mt-2">
                                         <span className="px-2 py-1 bg-primary/10 text-primary text-xs rounded-full">Technical</span>
@@ -611,13 +648,19 @@ export function InterviewPage() {
                 </div>
             </div>
 
-            {/* Mobile Panel Toggle */}
+            {/* Mobile Bottom Sheet Toggle */}
             <button
-                onClick={() => setShowPanel(!showPanel)}
+                onClick={toggleBottomSheet}
                 className="lg:hidden fixed bottom-24 right-4 w-12 h-12 bg-primary text-white rounded-full shadow-frost-lg flex items-center justify-center z-40"
             >
                 📊
             </button>
+
+            {/* HUD Container - Always rendered, visibility controlled by store */}
+            <HUDContainer />
+
+            {/* Bottom Sheet for Mobile */}
+            <BottomSheet />
         </div>
     );
 }
@@ -625,7 +668,7 @@ export function InterviewPage() {
 // Metric Row Component
 function MetricRow({ label, value, status }: { label: string; value: string; status: 'good' | 'ok' | 'warn' }) {
     const statusColors = {
-        good: 'text-green-600 bg-green-50',
+        good: 'text-accent bg-accent/10',
         ok: 'text-yellow-600 bg-yellow-50',
         warn: 'text-red-600 bg-red-50'
     };

@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { NeuralKnot } from '../components/NeuralKnot';
+import NeuralKnot from '../components/studio/NeuralKnot';
 
 export function HomePage() {
     return (
@@ -16,7 +16,7 @@ export function HomePage() {
                 />
 
                 <div className="container relative">
-                    <div className="flex flex-col lg:flex-row items-center justify-between gap-12 py-16 lg:py-24">
+                    <div className="flex flex-col lg:flex-row items-center justify-between gap-8 py-8 lg:py-16">
                         {/* Left: Content */}
                         <div className="flex-1 text-center lg:text-left max-w-2xl">
                             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight mb-6">
@@ -40,37 +40,8 @@ export function HomePage() {
 
                         {/* Right: Quinn Illustration */}
                         <div className="flex-1 flex justify-center lg:justify-end">
-                            <div className="relative w-72 h-80 lg:w-96 lg:h-[420px]">
-                                {/* Glow Effect */}
-                                <div className="absolute inset-0 blur-3xl bg-gradient-to-r from-primary/30 to-accent/30 rounded-full" />
-
-                                {/* Quinn with Hello Bubble */}
-                                <div className="relative flex flex-col items-center pt-4">
-                                    {/* Hello Speech Bubble */}
-                                    <div className="glass-card-strong px-5 py-3 rounded-2xl mb-4 shadow-frost-lg relative z-10">
-                                        <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-3 h-3 bg-white rotate-45" />
-                                        <p className="text-base font-medium text-text whitespace-nowrap">
-                                            👋 Hi! I'm <span className="text-primary font-bold">Quinn</span>
-                                        </p>
-                                        <p className="text-xs text-text-secondary mt-0.5 text-center">
-                                            Your AI interview coach
-                                        </p>
-                                    </div>
-
-                                    {/* Neural Knot */}
-                                    <div className="relative z-10">
-                                        <NeuralKnot size="hero" state="coaching" />
-                                    </div>
-                                </div>
-
-                                {/* Floating Chat Bubbles - positioned outside main container */}
-                                <div className="absolute left-0 top-1/2 -translate-x-1/2 glass-card px-3 py-2 rounded-xl rounded-bl-sm shadow-frost hero-bubble-1 z-20">
-                                    <span className="text-sm">💬 Tell me about yourself...</span>
-                                </div>
-                                <div className="absolute right-0 bottom-1/4 translate-x-1/3 glass-card px-3 py-2 rounded-xl rounded-br-sm shadow-frost hero-bubble-2 z-20">
-                                    <span className="text-sm text-accent">✨ Great structure!</span>
-                                </div>
-                            </div>
+                            {/* Neural Knot - directly rendered */}
+                            <NeuralKnot state="intro" />
                         </div>
                     </div>
                 </div>

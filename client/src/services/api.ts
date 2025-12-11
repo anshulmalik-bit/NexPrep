@@ -55,6 +55,34 @@ interface LeaderboardEntry {
     createdAt: string;
 }
 
+// Content Judge types
+export interface ContentJudgeParams {
+    questionId: string;
+    questionText: string;
+    transcript: string;
+    transcriptConfidence?: number;
+    role: string;
+    company?: string | null;
+    track: string;
+    experienceLevel?: 'Junior' | 'Mid' | 'Senior';
+    quinnMode: 'SUPPORTIVE' | 'DIRECT';
+    resumeKeywords?: string[];
+    maxResponseTimeMs?: number;
+}
+
+export interface ContentFeedback {
+    status: 'OK' | 'PARTIAL' | 'ERROR';
+    content_score: number;
+    content_strength: string;
+    content_fix: string;
+    content_label: string;
+    key_evidence: string | null;
+    suggested_rewrite: string | null;
+    explainability: Array<{ signal: string; value: number }>;
+    resource_ids: string[];
+    latency_ms: number;
+}
+
 class ApiService {
     private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
         const response = await fetch(`${API_BASE}${endpoint}`, {
@@ -179,6 +207,14 @@ class ApiService {
         return this.request('/leaderboard', {
             method: 'POST',
             body: JSON.stringify(data),
+        });
+    }
+
+    // Content Judge
+    async judgeContent(params: ContentJudgeParams): Promise<ContentFeedback> {
+        return this.request('/judge/content', {
+            method: 'POST',
+            body: JSON.stringify(params),
         });
     }
 }
