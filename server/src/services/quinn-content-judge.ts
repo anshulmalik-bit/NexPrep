@@ -1,5 +1,5 @@
-import { callGemini } from './gemini';
-import { QuinnMode } from './quinn-core';
+import { callGemini } from './gemini.js';
+import { QuinnMode } from './quinn-core.js';
 
 // ============================================
 // TYPES

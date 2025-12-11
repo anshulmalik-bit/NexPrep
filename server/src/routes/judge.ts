@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { judgeContent, ContentJudgeInput, ContentJudgeOutput } from '../services/quinn-content-judge';
+import { judgeContent, ContentJudgeInput, ContentJudgeOutput } from '../services/quinn-content-judge.js';
 
 const router = Router();
 
