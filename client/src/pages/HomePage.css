@@ -61,10 +61,15 @@
     background-clip: text;
 }
 
-/* Keep headline on one line */
+/* Keep headline on one line on desktop, allow wrap on mobile */
 .hero__headline {
     display: inline;
-    white-space: nowrap;
+}
+
+@media (min-width: 768px) {
+    .hero__headline {
+        white-space: nowrap;
+    }
 }
 
 .hero__description {
@@ -341,13 +346,13 @@
 
 .hero__bubble--1 {
     top: 15%;
-    right: -10%;
+    right: 5%;
     animation-delay: 0s;
 }
 
 .hero__bubble--2 {
     bottom: 25%;
-    left: -5%;
+    left: 5%;
     animation-delay: 2s;
 }
 
