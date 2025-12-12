@@ -97,6 +97,18 @@ export const SmartInput: React.FC<SmartInputProps> = ({
     // Start audio/video recording
     const startRecording = async () => {
         try {
+            // Optimization: In TEXT mode, just use SpeechRecognition (dictation)
+            // avoiding MediaRecorder/getUserMedia conflict on mobile
+            if (answerMode === 'TEXT') {
+                startSpeech();
+                setIsRecording(true);
+                setRecordingTime(0);
+                timerRef.current = window.setInterval(() => {
+                    setRecordingTime(prev => prev + 1);
+                }, 1000);
+                return;
+            }
+
             const constraints: MediaStreamConstraints = {
                 audio: true,
                 video: answerMode === 'VIDEO',
@@ -156,6 +168,18 @@ export const SmartInput: React.FC<SmartInputProps> = ({
 
     // Stop recording
     const stopRecording = () => {
+        // Handle TEXT mode separately (Dictation only)
+        if (answerMode === 'TEXT') {
+            stopSpeech();
+            setIsRecording(false);
+            if (timerRef.current) {
+                clearInterval(timerRef.current);
+                timerRef.current = null;
+            }
+            // Do NOT auto-submit. Let user review text and press Send.
+            return;
+        }
+
         if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
             mediaRecorderRef.current.stop();
             stopSpeech(); // Stop transcription

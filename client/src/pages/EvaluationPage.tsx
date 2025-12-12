@@ -193,8 +193,8 @@ export function EvaluationPage() {
                 </div>
 
                 {/* Story Content */}
-                <div className="pt-8 px-4 pb-24">
-                    <div className="story-slide">
+                <div className="pt-8 px-4 pb-24 max-w-full overflow-x-hidden">
+                    <div className="story-slide w-full">
                         <SlideContent
                             slide={slides[currentSlide]}
                             report={report}
@@ -435,7 +435,7 @@ function SlideContent({
                     {/* Score Breakdown (Transparent Explanation) */}
                     <div className="mb-6 bg-slate-50 inline-block px-4 py-2 rounded-lg border border-slate-100">
                         <p className="text-xs font-semibold text-text-secondary mb-1">SCORE COMPOSITION</p>
-                        <div className="flex gap-4 text-xs">
+                        <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 text-xs">
                             <div className="flex items-center gap-1">
                                 <span className="w-2 h-2 rounded-full bg-primary/70"></span>
                                 <span>Interview: 70%</span>
