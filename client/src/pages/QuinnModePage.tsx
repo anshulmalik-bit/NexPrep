@@ -22,7 +22,15 @@ export function QuinnModePage() {
             <div className="glass-card-strong max-w-md w-full p-6 lg:p-8 relative">
                 <button
                     className="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-text-muted hover:text-text transition-colors"
-                    onClick={() => navigate(-1)}
+                    onClick={() => {
+                        // Fallback to /setup if no history
+                        if (window.history.length > 1) {
+                            navigate(-1);
+                        } else {
+                            navigate('/setup');
+                        }
+                    }}
+                    aria-label="Close modal"
                 >
                     ✕
                 </button>
@@ -40,8 +48,8 @@ export function QuinnModePage() {
                     <button
                         onClick={() => handleSelect('SUPPORTIVE')}
                         className={`p-4 rounded-xl text-left transition-all ${quinnMode === 'SUPPORTIVE'
-                                ? 'ring-2 ring-primary bg-primary/5'
-                                : 'bg-slate-50 hover:bg-slate-100'
+                            ? 'ring-2 ring-primary bg-primary/5'
+                            : 'bg-slate-50 hover:bg-slate-100'
                             }`}
                     >
                         <div className="flex items-center gap-3">
@@ -61,8 +69,8 @@ export function QuinnModePage() {
                     <button
                         onClick={() => handleSelect('DIRECT')}
                         className={`p-4 rounded-xl text-left transition-all ${quinnMode === 'DIRECT'
-                                ? 'ring-2 ring-primary bg-primary/5'
-                                : 'bg-slate-50 hover:bg-slate-100'
+                            ? 'ring-2 ring-primary bg-primary/5'
+                            : 'bg-slate-50 hover:bg-slate-100'
                             }`}
                     >
                         <div className="flex items-center gap-3">

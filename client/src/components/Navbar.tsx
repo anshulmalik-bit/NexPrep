@@ -169,7 +169,7 @@ export function Navbar() {
                     onClick={() => setShowLogin(false)}
                 >
                     <div
-                        className="w-full max-w-md bg-white/95 backdrop-blur-xl rounded-2xl shadow-frost-lg p-8 animate-slide-up"
+                        className="relative w-full max-w-md bg-white/95 backdrop-blur-xl rounded-2xl shadow-frost-lg p-8 animate-slide-up"
                         onClick={e => e.stopPropagation()}
                     >
                         <button

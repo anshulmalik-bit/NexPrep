@@ -183,7 +183,7 @@ export const SmartInput: React.FC<SmartInputProps> = ({
                         placeholder={answerMode === 'TEXT' ? placeholder : isRecording ? "Listening..." : "Tap the mic to start speaking..."}
                         disabled={disabled || (isRecording && answerMode !== 'TEXT')}
                         rows={3}
-                        className="w-full pr-12 bg-transparent text-gray-900 placeholder-gray-400 border-none resize-none focus:ring-0 text-base"
+                        className="w-full pr-12 bg-transparent text-gray-900 placeholder-gray-400 border-none resize-none focus:outline-none focus:ring-2 focus:ring-primary/30 rounded-lg text-base"
                     />
 
                     {/* Controls Area */}

@@ -903,9 +903,30 @@
     transform: scale(0.98);
   }
 
-  /* Remove hover effects on touch */
-  .hover-lift:hover {
-    transform: none;
+  /* Reset hover-lift on touch - use active state instead */
+  .hover-lift {
+    transform: none !important;
+  }
+
+  .hover-lift:active {
+    transform: scale(0.98) !important;
+  }
+}
+
+/* Slow bounce animation for subtle effects */
+.animate-bounce-slow {
+  animation: bounce-slow 3s ease-in-out infinite;
+}
+
+@keyframes bounce-slow {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-10px);
   }
 }
 

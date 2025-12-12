@@ -97,12 +97,13 @@ export function ResourcesPage() {
                 {/* Resource Grid */}
                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     {resources.map((resource) => (
-                        <div
+                        <button
                             key={resource.id}
-                            className={`glass-card p-6 hover-lift cursor-pointer group bg-gradient-to-br ${categoryColors[resource.category]} border`}
+                            onClick={() => alert(`${resource.title} - Coming soon!`)}
+                            className={`glass-card p-6 hover-lift cursor-pointer group bg-gradient-to-br ${categoryColors[resource.category]} border text-left w-full transition-all active:scale-[0.98]`}
                         >
                             <div className="flex items-start justify-between mb-4">
-                                <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center text-2xl shadow-sm group-hover:scale-110 transition-transform">
+                                <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center text-2xl shadow-sm group-hover:scale-110 transition-transform" aria-hidden="true">
                                     {resource.icon}
                                 </div>
                                 <span className="px-2 py-1 bg-white/80 rounded-full text-xs font-medium text-text-secondary">
@@ -120,7 +121,7 @@ export function ResourcesPage() {
                                     Read more →
                                 </span>
                             </div>
-                        </div>
+                        </button>
                     ))}
                 </div>
 

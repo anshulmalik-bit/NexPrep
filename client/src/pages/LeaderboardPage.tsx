@@ -71,26 +71,28 @@ export function LeaderboardPage() {
                     </p>
                 </div>
 
-                {/* Filter Pills */}
-                <div className="flex justify-center gap-2 mb-8">
-                    {[
-                        { id: 'all', label: 'All Tracks' },
-                        { id: 'tech', label: '💻 Tech' },
-                        { id: 'mba', label: '📊 MBA' },
-                        { id: 'analytics', label: '📈 Analytics' },
-                    ].map((f) => (
-                        <button
-                            key={f.id}
-                            onClick={() => setFilter(f.id as any)}
-                            className={`px-4 py-2 rounded-full text-sm font-medium transition-all
-                                ${filter === f.id
-                                    ? 'bg-primary text-white shadow-frost'
-                                    : 'bg-white border border-slate-200 text-text-secondary hover:border-primary/30'
-                                }`}
-                        >
-                            {f.label}
-                        </button>
-                    ))}
+                {/* Filter Pills - Scrollable on mobile */}
+                <div className="flex justify-center mb-8 -mx-4 px-4">
+                    <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                        {[
+                            { id: 'all', label: 'All Tracks' },
+                            { id: 'tech', label: '💻 Tech' },
+                            { id: 'mba', label: '📊 MBA' },
+                            { id: 'analytics', label: '📈 Analytics' },
+                        ].map((f) => (
+                            <button
+                                key={f.id}
+                                onClick={() => setFilter(f.id as any)}
+                                className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all
+                                    ${filter === f.id
+                                        ? 'bg-primary text-white shadow-frost'
+                                        : 'bg-white border border-slate-200 text-text-secondary hover:border-primary/30'
+                                    }`}
+                            >
+                                {f.label}
+                            </button>
+                        ))}
+                    </div>
                 </div>
 
                 {/* Desktop Table */}

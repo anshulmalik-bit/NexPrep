@@ -21,7 +21,7 @@ export function HomePage() {
                         {/* Left: Content */}
                         <div className="flex-1 text-center lg:text-left max-w-2xl">
                             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight mb-6">
-                                <span className="text-gradient whitespace-nowrap">NexPrep: Train Smarter.</span>
+                                <span className="text-gradient">NexPrep: Train Smarter.</span>
                                 <br />
                                 <span className="text-text">Feel Confident.</span>
                             </h1>
@@ -45,7 +45,7 @@ export function HomePage() {
                             <div className="relative">
                                 <NeuralKnot state="intro" />
                                 {/* Hi Bubble - Hidden on mobile, visible on tablet+ */}
-                                <div className="hidden sm:block absolute -top-4 -right-2 md:-top-6 md:-right-6 bg-white px-4 py-2 md:px-6 md:py-3 rounded-2xl shadow-xl z-10" style={{ animation: 'bounce 3s ease-in-out infinite' }}>
+                                <div className="hidden sm:block absolute -top-4 -right-2 md:-top-6 md:-right-6 bg-white px-4 py-2 md:px-6 md:py-3 rounded-2xl shadow-xl z-10 animate-bounce-slow">
                                     <span className="text-xl md:text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">
                                         Hi! 👋
                                     </span>

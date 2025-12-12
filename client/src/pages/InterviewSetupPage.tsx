@@ -84,7 +84,7 @@ export function InterviewSetupPage() {
                             <div className="relative mb-4">
                                 <input
                                     type="text"
-                                    className="form-input pl-10"
+                                    className="form-input pl-10 focus:ring-2 focus:ring-primary/30 focus:border-primary"
                                     placeholder="Search companies..."
                                     value={companySearch}
                                     onChange={(e) => {
@@ -92,7 +92,7 @@ export function InterviewSetupPage() {
                                         setCompanyName(e.target.value);
                                     }}
                                 />
-                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" aria-hidden="true">
                                     🔍
                                 </span>
                             </div>
@@ -121,7 +121,7 @@ export function InterviewSetupPage() {
 
                             {/* Search Results */}
                             {companySearch && filteredCompanies.length > 0 && companySearch !== companyName && (
-                                <div className="border border-slate-200 rounded-xl overflow-hidden mb-4">
+                                <div className="absolute left-0 right-0 top-full mt-1 border border-slate-200 rounded-xl overflow-hidden mb-4 bg-white shadow-lg z-20">
                                     {filteredCompanies.slice(0, 5).map((company) => (
                                         <button
                                             key={company}
@@ -272,13 +272,13 @@ export function InterviewSetupPage() {
                             {/* Text Mode */}
                             <button
                                 onClick={() => setAnswerMode('text')}
-                                className={`p-6 rounded-xl border-2 transition-all duration-300 text-left
+                                className={`p-6 rounded-xl border-2 transition-all duration-300 text-left active:scale-[0.98]
                                     ${answerMode === 'text'
                                         ? 'border-primary bg-primary/5 shadow-frost'
                                         : 'border-slate-200 hover:border-primary/30'
                                     }`}
                             >
-                                <div className="text-3xl mb-3">📝</div>
+                                <div className="text-3xl mb-3" aria-hidden="true">📝</div>
                                 <h4 className="font-semibold text-text mb-1">Text</h4>
                                 <p className="text-sm text-text-secondary">Type your answers</p>
                             </button>
@@ -369,7 +369,7 @@ export function InterviewSetupPage() {
                     </button>
                     {!canProceed && (
                         <p className="text-center text-sm text-text-muted mt-3">
-                            Please select a track and role first
+                            {!trackId ? 'Please select a track first' : 'Please select a role first'}
                         </p>
                     )}
                 </div>
