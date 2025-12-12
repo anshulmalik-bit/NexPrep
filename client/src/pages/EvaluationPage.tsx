@@ -255,7 +255,10 @@ export function EvaluationPage() {
                 </div>
 
                 {/* Score Circle */}
-                <div className="flex justify-center mb-12">
+                <div className="flex flex-col items-center justify-center mb-12">
+                    <div className="mb-6">
+                        <NeuralKnot size="lg" state="coaching" />
+                    </div>
                     <div className="glass-card-strong w-40 h-40 rounded-full flex flex-col items-center justify-center shadow-neural">
                         <span className="text-5xl font-bold text-gradient">{avgScore}</span>
                         <span className="text-sm text-text-secondary mt-1">Average Score</span>
