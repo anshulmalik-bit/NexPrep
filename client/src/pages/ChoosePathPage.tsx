@@ -143,52 +143,43 @@ export function ChoosePathPage() {
                             </div>
                         )}
 
-                        {/* Continue Button - Desktop Only */}
-                        <div className="mt-8 hidden lg:block">
-                            <button
-                                onClick={handleContinue}
-                                disabled={!selectedTrack || !selectedRole}
-                                className={`w-full py-4 rounded-xl font-semibold text-lg transition-all duration-300
-                                    ${selectedTrack && selectedRole
-                                        ? 'btn-cta'
-                                        : 'bg-slate-100 text-text-muted cursor-not-allowed'
-                                    }`}
-                            >
-                                {selectedTrack && selectedRole
-                                    ? `Continue as ${selectedRole.name} →`
-                                    : 'Select a track and role to continue'
-                                }
-                            </button>
+                        {/* Bottom padding to account for fixed button */}
+                        <div className="h-32"></div>
+
+                        {/* Unified Fixed Bottom Bar */}
+                        <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/95 backdrop-blur-xl border-t border-slate-100 shadow-frost-lg z-50">
+                            <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+                                <div className="text-sm font-medium">
+                                    {selectedTrack ? (
+                                        <>
+                                            <span className="text-text-secondary">Selected: </span>
+                                            <span className="text-text">{selectedTrack.name}</span>
+                                            {selectedRole && (
+                                                <span className="text-primary"> → {selectedRole.name}</span>
+                                            )}
+                                        </>
+                                    ) : (
+                                        <span className="text-text-muted">Select a track to begin</span>
+                                    )}
+                                </div>
+
+                                <button
+                                    onClick={handleContinue}
+                                    disabled={!selectedTrack || !selectedRole}
+                                    className={`w-full sm:w-auto px-8 py-3 rounded-xl font-semibold text-lg transition-all duration-300
+                                ${selectedTrack && selectedRole
+                                            ? 'btn-cta shadow-lg hover:shadow-xl hover:-translate-y-0.5'
+                                            : 'bg-slate-100 text-text-muted cursor-not-allowed'
+                                        }`}
+                                >
+                                    {selectedTrack && selectedRole
+                                        ? `Continue as ${selectedRole.name} →`
+                                        : 'Select Track & Role'
+                                    }
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
-
-                {/* Selection Summary (Mobile) */}
-                {selectedTrack && (
-                    <div className="lg:hidden fixed bottom-0 left-0 right-0 p-4 bg-white/95 backdrop-blur-xl border-t border-slate-100 shadow-frost-lg">
-                        <div className="flex items-center justify-between mb-3">
-                            <div className="text-sm">
-                                <span className="text-text-secondary">Selected: </span>
-                                <span className="font-medium text-text">{selectedTrack.name}</span>
-                                {selectedRole && (
-                                    <span className="text-primary"> → {selectedRole.name}</span>
-                                )}
-                            </div>
-                        </div>
-                        <button
-                            onClick={handleContinue}
-                            disabled={!selectedRole}
-                            className={`w-full py-3 rounded-xl font-semibold transition-all duration-300
-                                ${selectedRole
-                                    ? 'btn-cta'
-                                    : 'bg-slate-100 text-text-muted cursor-not-allowed'
-                                }`}
-                        >
-                            {selectedRole ? `Continue as ${selectedRole.name} →` : 'Select a role'}
-                        </button>
-                    </div>
-                )}
-            </div>
-        </div>
-    );
+                );
 }
