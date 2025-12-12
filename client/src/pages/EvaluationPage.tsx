@@ -255,10 +255,7 @@ export function EvaluationPage() {
                 </div>
 
                 {/* Score Circle */}
-                <div className="flex flex-col items-center justify-center mb-12">
-                    <div className="mb-6">
-                        <NeuralKnot size="lg" state="coaching" />
-                    </div>
+                <div className="flex justify-center mb-12">
                     <div className="glass-card-strong w-40 h-40 rounded-full flex flex-col items-center justify-center shadow-neural">
                         <span className="text-5xl font-bold text-gradient">{avgScore}</span>
                         <span className="text-sm text-text-secondary mt-1">Average Score</span>
@@ -427,9 +424,6 @@ function SlideContent({
         case 'score':
             return (
                 <div className="text-center py-12">
-                    <div className="mx-auto mb-6">
-                        <NeuralKnot size="lg" state="coaching" />
-                    </div>
                     <div className="glass-card-strong w-36 h-36 rounded-full flex flex-col items-center justify-center mx-auto shadow-neural mb-6">
                         <span className="text-5xl font-bold text-gradient">{avgScore}</span>
                         <span className="text-xs text-text-secondary mt-1">Overall Score</span>
