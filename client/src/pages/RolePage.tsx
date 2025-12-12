@@ -24,7 +24,7 @@ export function RolePage() {
 
     const handleSelectRole = (id: string) => {
         setRole(id);
-        navigate('/setup/company');
+        navigate('/setup');
     };
 
     return (
@@ -55,8 +55,8 @@ export function RolePage() {
                             key={role.id}
                             onClick={() => handleSelectRole(role.id)}
                             className={`glass-card p-5 text-left transition-all ${roleId === role.id
-                                    ? 'ring-2 ring-primary bg-primary/5'
-                                    : 'hover:shadow-frost-lg hover:border-primary/30'
+                                ? 'ring-2 ring-primary bg-primary/5'
+                                : 'hover:shadow-frost-lg hover:border-primary/30'
                                 }`}
                         >
                             <div className="flex items-start gap-3">
