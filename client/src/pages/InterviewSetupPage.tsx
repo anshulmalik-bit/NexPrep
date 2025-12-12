@@ -13,7 +13,8 @@ export function InterviewSetupPage() {
         roleId,
         setCompanyInfo,
         setResumeData,
-        setQuinnMode
+        setQuinnMode,
+        setAnswerMode
     } = useInterviewStore();
 
     const [companyName, setCompanyName] = useState('');
@@ -47,8 +48,9 @@ export function InterviewSetupPage() {
         setResumeData(resumeText || undefined, undefined);
         setQuinnMode(quinnTone);
 
-        // Navigate directly to interview (text mode is default)
-        navigate('/interview');
+        // Default to VIDEO mode for the full experience (permissions checked in Calibration)
+        setAnswerMode('VIDEO');
+        navigate('/calibration');
     };
 
     const canProceed = trackId && roleId;
