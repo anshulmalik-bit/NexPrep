@@ -8,8 +8,6 @@ import {
     type AnswerRecord
 } from '../store/interview-store';
 import { api, type ContentFeedback } from '../services/api';
-import { getQuinnCompletion } from '../services/quinn-messages';
-import { judgeContentHeuristic } from '../services/heuristicJudge';
 import { NeuralKnot } from '../components/NeuralKnot';
 import { SmartInput } from '../components/SmartInput';
 import { HUDContainer } from '../components/HUDContainer';
@@ -25,6 +23,7 @@ interface ChatMessage {
 export function InterviewPage() {
     const navigate = useNavigate();
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const initRef = useRef(false); // Guard against React StrictMode double-call
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [isTyping, setIsTyping] = useState(false);
     const [showHintSuggestion, setShowHintSuggestion] = useState(false);
@@ -69,6 +68,9 @@ export function InterviewPage() {
     }, [messages]);
 
     useEffect(() => {
+        // Guard against React StrictMode calling useEffect twice
+        if (initRef.current) return;
+        initRef.current = true;
         initInterview();
     }, []);
 
@@ -104,16 +106,9 @@ export function InterviewPage() {
 
             startSession(result.sessionId);
 
-            const greeting = quinnMode === 'SUPPORTIVE'
-                ? `Hello! I'm Quinn, your interview coach. Ready to practice for your ${roleId || 'frontend'} role? Let's make this fun and productive! 🚀`
-                : `Quinn here. ${roleId || 'frontend'} interview practice. Let's get started.`;
-
-            setMessages([{
-                id: '1',
-                type: 'quinn',
-                content: greeting,
-                timestamp: new Date()
-            }]);
+            // Don't add client-side greeting - the server's first response
+            // includes a conversational greeting (Acknowledge → Reflect → Transition → Question)
+            setMessages([]);
 
             await fetchNextQuestion(result.sessionId);
         } catch (err) {
@@ -178,6 +173,22 @@ export function InterviewPage() {
             }
 
             const result = await api.getQuestion(sid);
+
+            // Handle interview completion from server
+            if (result.isInterviewComplete) {
+                setMessages(prev => [...prev, {
+                    id: Date.now().toString(),
+                    type: 'system',
+                    content: quinnMode === 'SUPPORTIVE'
+                        ? "🎉 Great work! You've completed all questions. Let me prepare your evaluation report..."
+                        : "Interview complete. Preparing your evaluation...",
+                    timestamp: new Date()
+                }]);
+                setIsTyping(false);
+                setTimeout(() => navigate('/evaluation'), 2000);
+                return;
+            }
+
             setQuestion({
                 id: result.questionId,
                 text: result.question,
@@ -233,139 +244,98 @@ export function InterviewPage() {
 
         setIsTyping(true);
 
+        // Create answer record for store
+        const answerRecord: AnswerRecord = {
+            questionId: currentQuestion.id,
+            questionText: currentQuestion.text,
+            answerText: answer,
+            audioBlob,
+            videoBlob,
+            submittedAt: new Date(),
+        };
+
+        // Show loading message
+        const feedbackId = `feedback-${Date.now()}`;
+        setMessages(prev => [...prev, {
+            id: feedbackId,
+            type: 'quinn',
+            content: '🔄 Analyzing your answer...',
+            timestamp: new Date()
+        }]);
+
         try {
-            // Create answer record for store
-            const answerRecord: AnswerRecord = {
+            // Call the Master Judge API (single source of truth for evaluation)
+            const judgeResult = await api.judgeContent({
                 questionId: currentQuestion.id,
                 questionText: currentQuestion.text,
-                answerText: answer,
-                audioBlob,
-                videoBlob,
-                submittedAt: new Date(),
-            };
-
-            // 1. INSTANT HEURISTIC FEEDBACK
-            const localResult = judgeContentHeuristic(answer);
-            setCurrentFeedback(localResult);
-
-            const feedbackId = `feedback-${Date.now()}`;
-            const instantMessage = `⚡ **Instant Analysis**\n${localResult.content_strength}\nTip: ${localResult.content_fix}`;
-
-            setMessages(prev => [...prev, {
-                id: feedbackId,
-                type: 'quinn',
-                content: instantMessage,
-                timestamp: new Date()
-            }]);
-
-            // 2. BACKEND JUDGEMENT (Asynchronous)
-            try {
-                // We don't await this immediately for the UI to be responsive, 
-                // but we need the result eventually to update the message.
-                // Actually, let's await it but the UI already showed "Instant Analysis"
-
-                const judgeResult = await api.judgeContent({
-                    questionId: currentQuestion.id,
-                    questionText: currentQuestion.text,
-                    transcript: answer,
-                    role: roleId || 'frontend',
-                    track: trackId || 'tech',
-                    quinnMode: quinnMode || 'SUPPORTIVE',
-                    company: companyName,
-                });
-
-                setCurrentFeedback(judgeResult);
-
-                // Show micro-feedback in chat - UPDATING the existing message
-                const finalMessage = judgeResult.status === 'OK'
-                    ? `✅ **${judgeResult.content_strength}**\n\n💡 ${judgeResult.content_fix}\n\n*Score: ${judgeResult.content_score}/100*`
-                    : `🔄 ${judgeResult.content_fix}`;
-
-                setMessages(prev => prev.map(msg =>
-                    msg.id === feedbackId
-                        ? { ...msg, content: finalMessage }
-                        : msg
-                ));
-
-                // Save to store with Content Judge evaluation
-                saveAnswer(currentQuestion.id, {
-                    ...answerRecord,
-                    evaluation: {
-                        score: judgeResult.content_score,
-                        strengths: [judgeResult.content_strength],
-                        weaknesses: [judgeResult.content_fix],
-                        missingElements: [],
-                        suggestedStructure: judgeResult.content_label,
-                        improvedSampleAnswer: judgeResult.suggested_rewrite || ''
-                    }
-                });
-
-                // Update live metrics
-                updatePacing(judgeResult.content_score >= 70 ? 65 : 35);
-                updateConfidence(judgeResult.content_score);
-
-            } catch (judgeError) {
-                console.error('Content Judge error:', judgeError);
-                // Keep the heuristic result if backend fails or show error
-                setMessages(prev => prev.map(msg =>
-                    msg.id === feedbackId
-                        ? { ...msg, content: `⚠️ Could not reach Quinn cloud. retained local analysis.\n\n${instantMessage}` }
-                        : msg
-                ));
-            }
-
-            // Demo mode: show completion after judge
-            if (sessionId === 'demo-session') {
-                if (questionNumber < totalQuestions) {
-                    setTimeout(() => fetchNextQuestion(sessionId), 1500);
-                } else {
-                    const completionMessage = getQuinnCompletion(quinnMode || 'SUPPORTIVE');
-                    setMessages(prev => [...prev, {
-                        id: Date.now().toString(),
-                        type: 'system',
-                        content: completionMessage + ' (Demo complete!)',
-                        timestamp: new Date()
-                    }]);
-                }
-                setIsTyping(false);
-                return;
-            }
-
-            // Real API call
-            const result = await api.submitAnswer(sessionId, currentQuestion.id, answer);
-
-            setMessages(prev => [...prev, {
-                id: Date.now().toString(),
-                type: 'quinn',
-                content: result.feedback || `Score: ${result.score}/100`,
-                timestamp: new Date()
-            }]);
-
-            saveAnswer(currentQuestion.id, {
-                ...answerRecord,
-                evaluation: result
+                transcript: answer,
+                role: roleId || 'frontend',
+                track: trackId || 'tech',
+                quinnMode: quinnMode || 'SUPPORTIVE',
+                company: companyName,
             });
 
-            // Update live metrics based on score
-            updatePacing(result.score >= 70 ? 65 : 35);
-            updateConfidence(result.score);
+            setCurrentFeedback(judgeResult);
 
+            // Update the loading message with the actual feedback (ONE message only)
+            const finalMessage = judgeResult.status === 'OK'
+                ? `✅ **${judgeResult.content_strength}**\n\n💡 ${judgeResult.content_fix}`
+                : `🔄 ${judgeResult.content_fix}`;
+
+            setMessages(prev => prev.map(msg =>
+                msg.id === feedbackId
+                    ? { ...msg, content: finalMessage }
+                    : msg
+            ));
+
+            // Save to store with evaluation
+            saveAnswer(currentQuestion.id, {
+                ...answerRecord,
+                evaluation: {
+                    score: judgeResult.content_score,
+                    strengths: [judgeResult.content_strength],
+                    weaknesses: [judgeResult.content_fix],
+                    missingElements: [],
+                    suggestedStructure: judgeResult.content_label,
+                    improvedSampleAnswer: judgeResult.suggested_rewrite || ''
+                }
+            });
+
+            // Update live metrics
+            updatePacing(judgeResult.content_score >= 70 ? 65 : 35);
+            updateConfidence(judgeResult.content_score);
+
+            // Move to next question or complete
             if (questionNumber < totalQuestions) {
                 setTimeout(() => fetchNextQuestion(sessionId), 1500);
             } else {
-                const completionMessage = getQuinnCompletion(quinnMode || 'SUPPORTIVE');
+                // Interview complete
                 setMessages(prev => [...prev, {
                     id: Date.now().toString(),
                     type: 'system',
-                    content: completionMessage + ' Preparing your evaluation...',
+                    content: quinnMode === 'SUPPORTIVE'
+                        ? "🎉 Great work! You've completed all questions. Let me prepare your evaluation report..."
+                        : "Interview complete. Preparing your evaluation...",
                     timestamp: new Date()
                 }]);
-
-                // Navigate to Evaluation
                 setTimeout(() => navigate('/evaluation'), 2000);
             }
-        } catch (error) {
-            console.error('Failed to submit answer:', error);
+
+        } catch (judgeError) {
+            console.error('Content Judge error:', judgeError);
+            // Show error but still allow progression
+            setMessages(prev => prev.map(msg =>
+                msg.id === feedbackId
+                    ? { ...msg, content: '⚠️ Could not analyze answer. Moving to next question...' }
+                    : msg
+            ));
+
+            // Still move to next question
+            if (questionNumber < totalQuestions) {
+                setTimeout(() => fetchNextQuestion(sessionId), 1500);
+            } else {
+                setTimeout(() => navigate('/evaluation'), 2000);
+            }
         } finally {
             setIsTyping(false);
         }
@@ -413,8 +383,8 @@ export function InterviewPage() {
 
     return (
         <div className="min-h-screen bg-[#F9FAFB] pt-[72px] flex flex-col">
-            {/* Progress Bar */}
-            <div className="sticky top-[72px] z-30 bg-white/95 backdrop-blur-xl border-b border-slate-100">
+            {/* Progress Bar & End Interview Header - Fixed Position */}
+            <div className="fixed top-[72px] left-0 right-0 z-30 bg-white/95 backdrop-blur-xl border-b border-slate-100 shadow-sm">
                 <div className="h-1.5 bg-slate-100">
                     <div
                         className="h-full bg-gradient-to-r from-primary to-accent transition-all duration-500"
@@ -424,7 +394,7 @@ export function InterviewPage() {
                 <div className="container py-3 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <NeuralKnot size="sm" state={isTyping ? 'thinking' : 'idle'} />
-                        <span className="text-sm font-medium text-text">
+                        <span className="text-sm font-medium text-text hidden md:inline">
                             Quinn ({quinnMode === 'SUPPORTIVE' ? 'Supportive' : 'Direct'})
                         </span>
                         {/* Answer mode indicator */}
@@ -435,14 +405,26 @@ export function InterviewPage() {
                             {answerMode === 'TEXT' ? '📝' : answerMode === 'AUDIO' ? '🎤' : '📹'} {answerMode}
                         </span>
                     </div>
-                    <span className="text-sm text-text-secondary">
-                        Question {questionNumber} of {totalQuestions}
-                    </span>
+                    <div className="flex items-center gap-2 sm:gap-4">
+                        <span className="text-sm text-text-secondary hidden sm:inline">
+                            Question {questionNumber} of {totalQuestions}
+                        </span>
+                        <span className="text-sm text-text-secondary sm:hidden">
+                            {questionNumber}/{totalQuestions}
+                        </span>
+                        <button
+                            onClick={() => navigate('/evaluation')}
+                            className="px-3 sm:px-4 py-1.5 text-sm font-medium text-red-600 hover:text-white hover:bg-red-500 border border-red-300 hover:border-red-500 rounded-full transition-all flex-shrink-0"
+                        >
+                            <span className="hidden sm:inline">End Interview</span>
+                            <span className="sm:hidden">End</span>
+                        </button>
+                    </div>
                 </div>
             </div>
 
-            {/* Main Content - 70/30 Split */}
-            <div className="flex-1 flex max-w-[1440px] mx-auto w-full">
+            {/* Main Content - 70/30 Split - Added top margin for fixed header */}
+            <div className="flex-1 flex max-w-[1440px] mx-auto w-full mt-[65px]">
                 {/* Chat Section (70%) */}
                 <div className="flex-1 lg:w-[70%] flex flex-col bg-[#F9FAFB] relative">
                     {/* Messages */}

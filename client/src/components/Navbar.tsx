@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { NeuralKnot } from './NeuralKnot';
+import { useToast } from './Toast';
 
 export function Navbar() {
     const [isOpen, setIsOpen] = useState(false);
     const [showLogin, setShowLogin] = useState(false);
+    const { showToast } = useToast();
     const location = useLocation();
 
     const isActive = (path: string) => location.pathname === path;
@@ -191,7 +193,7 @@ export function Navbar() {
                             className="space-y-4"
                             onSubmit={(e) => {
                                 e.preventDefault();
-                                alert('Login functionality coming soon! For now, enjoy the simulation without an account.');
+                                showToast('Login functionality coming soon! For now, enjoy the simulation without an account.', 'info');
                                 setShowLogin(false);
                             }}
                         >

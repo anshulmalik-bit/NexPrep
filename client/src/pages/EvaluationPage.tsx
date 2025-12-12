@@ -14,7 +14,7 @@ interface Slide {
 
 export function EvaluationPage() {
     const navigate = useNavigate();
-    const { sessionId, answers, quinnMode, trackId, roleId, setReport, report } = useInterviewStore();
+    const { sessionId, answers, quinnMode, trackId, roleId, setReport, report, atsAnalysis } = useInterviewStore();
     const [loading, setLoading] = useState(true);
     const [currentSlide, setCurrentSlide] = useState(0);
     const [nickname, setNickname] = useState('');
@@ -54,27 +54,39 @@ export function EvaluationPage() {
 
     const loadReport = async () => {
         try {
+            // Fetch each report section with individual error handling
             const [summary, skills, strengths, weaknesses, breakdown, plan] = await Promise.all([
-                api.getReportSummary(sessionId!),
-                api.getReportSkillMatrix(sessionId!),
-                api.getReportStrengths(sessionId!),
-                api.getReportWeaknesses(sessionId!),
-                api.getReportBreakdown(sessionId!),
-                api.getReportPlan(sessionId!),
+                api.getReportSummary(sessionId!).catch(() => ({ summary: 'Interview completed. Your performance is being evaluated.' })),
+                api.getReportSkillMatrix(sessionId!).catch(() => ({ skillMatrix: [] })),
+                api.getReportStrengths(sessionId!).catch(() => ({ strengths: ['Completed the interview session'] })),
+                api.getReportWeaknesses(sessionId!).catch(() => ({ weaknesses: ['Consider completing more questions for better analysis'] })),
+                api.getReportBreakdown(sessionId!).catch(() => ({ breakdown: [] })),
+                api.getReportPlan(sessionId!).catch(() => ({ improvementPlan: ['Practice with more interview sessions', 'Review common interview questions'] })),
             ]);
 
             setReport({
                 summary: summary.summary,
-                skillMatrix: skills.skillMatrix,
-                strengths: strengths.strengths,
-                weaknesses: weaknesses.weaknesses,
-                questionBreakdown: breakdown.breakdown,
-                improvementPlan: plan.improvementPlan,
+                skillMatrix: skills.skillMatrix || [],
+                strengths: strengths.strengths || [],
+                weaknesses: weaknesses.weaknesses || [],
+                questionBreakdown: breakdown.breakdown || [],
+                improvementPlan: plan.improvementPlan || [],
                 patternDetection: [],
                 resources: [],
             });
         } catch (error) {
             console.error('Failed to load report:', error);
+            // Set fallback report
+            setReport({
+                summary: 'Interview session completed.',
+                skillMatrix: [],
+                strengths: ['Completed the interview'],
+                weaknesses: ['Complete more questions for better analysis'],
+                questionBreakdown: [],
+                improvementPlan: ['Practice with more sessions'],
+                patternDetection: [],
+                resources: [],
+            });
         } finally {
             setLoading(false);
         }
@@ -83,12 +95,10 @@ export function EvaluationPage() {
     const handleSubmitToLeaderboard = async () => {
         if (!nickname.trim()) return;
 
-        const avgScore = answers.reduce((sum, a) => sum + (a.evaluation?.score || 0), 0) / answers.length;
-
         try {
             await api.submitScore({
                 nickname: nickname.trim(),
-                score: Math.round(avgScore),
+                score: avgScore, // Uses the pre-calculated avgScore with fallbacks
                 trackId: trackId!,
                 roleId: roleId!,
             });
@@ -110,9 +120,35 @@ export function EvaluationPage() {
         }
     };
 
-    const avgScore = answers.length > 0
-        ? Math.round(answers.reduce((sum, a) => sum + (a.evaluation?.score || 0), 0) / answers.length)
+    // Calculate average score from answers, or fall back to skill matrix average
+    const answersWithScores = answers.filter(a => a.evaluation?.score !== undefined);
+    const avgFromAnswers = answersWithScores.length > 0
+        ? Math.round(answersWithScores.reduce((sum, a) => sum + (a.evaluation?.score || 0), 0) / answersWithScores.length)
         : 0;
+
+    // Use skill matrix average if we don't have proper answer scores
+    const skillMatrixAvg = report?.skillMatrix && report.skillMatrix.length > 0
+        ? Math.round(report.skillMatrix.reduce((sum: number, s: { score?: number }) => sum + (s.score || 0), 0) / report.skillMatrix.length)
+        : 0;
+
+    let baseScore = avgFromAnswers > 0 ? avgFromAnswers : skillMatrixAvg;
+
+    // Factor in ATS Score if available (30% weight or equal weight? Let's do 50/50 split if answers are few, or weighted)
+    // If we have very few answers, ATS score matters more. If we have a full interview, ATS score is a baseline.
+    // Let's go with: Final = (Interview * 0.7) + (ATS * 0.3)
+    let finalScore = baseScore;
+
+    if (atsAnalysis?.resumeScore) {
+        // If interview score is 0 (no answers), just use ATS score
+        if (baseScore === 0) {
+            finalScore = atsAnalysis.resumeScore;
+        } else {
+            // Weighted average: 70% Interview, 30% Resume
+            finalScore = Math.round((baseScore * 0.7) + (atsAnalysis.resumeScore * 0.3));
+        }
+    }
+
+    const avgScore = finalScore;
 
     if (loading) {
         return (
@@ -163,6 +199,7 @@ export function EvaluationPage() {
                             slide={slides[currentSlide]}
                             report={report}
                             avgScore={avgScore}
+                            atsAnalysis={atsAnalysis}
                             nickname={nickname}
                             setNickname={setNickname}
                             submitted={submitted}
@@ -368,6 +405,7 @@ function SlideContent({
     slide,
     report,
     avgScore,
+    atsAnalysis,
     nickname,
     setNickname,
     submitted,
@@ -376,6 +414,7 @@ function SlideContent({
     slide: Slide;
     report: any;
     avgScore: number;
+    atsAnalysis?: any;
     nickname: string;
     setNickname: (v: string) => void;
     submitted: boolean;
@@ -390,8 +429,26 @@ function SlideContent({
                     </div>
                     <div className="glass-card-strong w-36 h-36 rounded-full flex flex-col items-center justify-center mx-auto shadow-neural mb-6">
                         <span className="text-5xl font-bold text-gradient">{avgScore}</span>
-                        <span className="text-xs text-text-secondary mt-1">Average Score</span>
+                        <span className="text-xs text-text-secondary mt-1">Overall Score</span>
                     </div>
+
+                    {/* Score Breakdown (Transparent Explanation) */}
+                    <div className="mb-6 bg-slate-50 inline-block px-4 py-2 rounded-lg border border-slate-100">
+                        <p className="text-xs font-semibold text-text-secondary mb-1">SCORE COMPOSITION</p>
+                        <div className="flex gap-4 text-xs">
+                            <div className="flex items-center gap-1">
+                                <span className="w-2 h-2 rounded-full bg-primary/70"></span>
+                                <span>Interview: 70%</span>
+                            </div>
+                            {atsAnalysis?.resumeScore ? (
+                                <div className="flex items-center gap-1">
+                                    <span className="w-2 h-2 rounded-full bg-emerald-500/70"></span>
+                                    <span>Resume (ATS): 30%</span>
+                                </div>
+                            ) : null}
+                        </div>
+                    </div>
+
                     <h2 className="text-2xl font-bold text-text mb-2">
                         {avgScore >= 80 ? 'Excellent Work! 🎉' : avgScore >= 60 ? 'Good Progress!' : avgScore >= 40 ? 'Keep Building!' : 'Every Step Counts!'}
                     </h2>

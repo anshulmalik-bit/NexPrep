@@ -42,6 +42,11 @@ Output JSON: { "summary": "<2-3 sentence personalized summary>" }`;
 export async function generateSkillMatrix(input: ReportInput): Promise<{ skillMatrix: Array<{ skill: string; score: number }> }> {
     const { answers, role } = input;
 
+    // Don't generate fictional scores if no real answers exist
+    if (!answers || answers.length === 0) {
+        return { skillMatrix: [] };
+    }
+
     const prompt = `Role: HR Analyst.
 Task: Create skill matrix (5 skills) based on answers for ${role}.
 Scores 0-100.
@@ -59,13 +64,15 @@ Output JSON: { "skillMatrix": [{ "skill": "<name>", "score": <number> }] }`;
         const result = await getLLM().generateJson<{ skillMatrix: Array<{ skill: string; score: number }> }>(fullPrompt, { temperature: 0.4 });
         return result;
     } catch {
+        // Return sensible fallback based on actual answer data
+        const avgScore = Math.round(answers.reduce((sum, a) => sum + a.evaluation.score, 0) / answers.length);
         return {
             skillMatrix: [
-                { skill: 'Communication', score: 70 },
-                { skill: 'Problem Solving', score: 65 },
-                { skill: 'Technical', score: 70 },
-                { skill: 'Leadership', score: 60 },
-                { skill: 'Adaptability', score: 65 },
+                { skill: 'Communication', score: avgScore },
+                { skill: 'Problem Solving', score: Math.max(0, avgScore - 5) },
+                { skill: 'Technical', score: avgScore },
+                { skill: 'Leadership', score: Math.max(0, avgScore - 10) },
+                { skill: 'Adaptability', score: Math.max(0, avgScore - 5) },
             ],
         };
     }

@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { api, type ATSAnalysis } from '../services/api';
 
 // ============================================
 // TYPE DEFINITIONS
@@ -103,6 +104,7 @@ export interface InterviewState {
     resumeText: string | null;
     resumeKeywords: string[];
     resumeParseStatus: 'none' | 'success' | 'partial' | 'failed';
+    atsAnalysis: ATSAnalysis | null;
 
     // Permissions & Calibration
     permissions: Permissions;
@@ -140,7 +142,7 @@ export interface InterviewState {
     // ========================================
     // RESUME ACTIONS
     // ========================================
-    setResumeData: (resumeText: string | undefined, resumeKeywords: string[] | undefined) => void;
+    setResumeData: (resumeText: string | undefined, resumeKeywords: string[] | undefined, atsAnalysis?: ATSAnalysis) => void;
     setResume: (text: string, keywords: string[], status: 'success' | 'partial' | 'failed') => void;
     clearResume: () => void;
 
@@ -244,6 +246,19 @@ const initialState = {
     resumeText: null,
     resumeKeywords: [],
     resumeParseStatus: 'none' as const,
+    atsAnalysis: null,
+
+    // ...
+
+    // ========================================
+    // RESUME ACTIONS
+    // ========================================
+    setResumeData: (resumeText, resumeKeywords, atsAnalysis) => set({
+        resumeText: resumeText || null,
+        resumeKeywords: resumeKeywords || [],
+        resumeParseStatus: resumeText ? 'success' : 'none',
+        atsAnalysis: atsAnalysis || null,
+    }),
 
     // Permissions & Calibration
     permissions: initialPermissions,
@@ -259,7 +274,7 @@ const initialState = {
     sessionId: null,
     currentQuestion: null,
     questionNumber: 0,
-    totalQuestions: 6,
+    totalQuestions: 12,
     answers: [] as AnswerRecord[],
     isLoading: false,
 

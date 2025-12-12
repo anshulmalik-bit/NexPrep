@@ -1,9 +1,10 @@
 import { Router } from 'express';
 import { v4 as uuidv4 } from 'uuid';
-import { generateQuestion } from '../services/quinn-question.js';
+import { generateQuinnResponse } from '../services/quinn-question.js';
 import { generateHint } from '../services/quinn-hint.js';
 import { evaluateAnswer } from '../services/quinn-evaluation.js';
 import { generateReportSummary, generateSkillMatrix, generateStrengths, generateWeaknesses, generateBreakdown, generateImprovementPlan, } from '../services/quinn-report.js';
+import { QUINN_TOTAL_QUESTIONS } from '../services/quinn-types.js';
 export const interviewRouter = Router();
 // In-memory session storage (for demo - use a database in production)
 const sessions = new Map();
@@ -15,6 +16,10 @@ interviewRouter.post('/start', async (req, res) => {
             return res.status(400).json({ error: 'trackId, roleId, and quinnMode are required' });
         }
         const sessionId = uuidv4();
+        // Compute resumeContext from resumeText (max 100 words for token efficiency)
+        const resumeContext = resumeText
+            ? resumeText.split(/\s+/).slice(0, 100).join(' ')
+            : '';
         sessions.set(sessionId, {
             trackId,
             roleId,
@@ -23,49 +28,76 @@ interviewRouter.post('/start', async (req, res) => {
             industryId,
             companySizeId,
             resumeText,
+            resumeContext,
             questions: [],
             answers: [],
+            lastUserMessage: '',
         });
-        res.json({ sessionId });
+        res.json({ sessionId, totalQuestions: QUINN_TOTAL_QUESTIONS });
     }
     catch (error) {
         console.error('Error starting interview:', error);
         res.status(500).json({ error: 'Failed to start interview' });
     }
 });
-// Get next question
+// Get next question (NEW CONTRACT)
 interviewRouter.post('/question', async (req, res) => {
     try {
-        const { sessionId } = req.body;
+        const { sessionId, lastUserMessage } = req.body;
         const session = sessions.get(sessionId);
         if (!session) {
             return res.status(404).json({ error: 'Session not found' });
         }
-        const questionNumber = session.questions.length + 1;
-        const previousQuestions = session.questions.map((q) => q.text);
-        const question = await generateQuestion({
-            track: session.trackId,
-            role: session.roleId,
-            quinnMode: session.quinnMode,
-            resumeText: session.resumeText,
-            companyName: session.companyName,
-            industryId: session.industryId,
-            companySizeId: session.companySizeId,
-            questionNumber,
-            previousQuestions,
-        });
+        const requestId = uuidv4();
+        const currentQuestionIndex = session.questions.length;
+        // Build input for new Quinn generator
+        const quinnInput = {
+            sessionId,
+            requestId,
+            clientState: {
+                currentQuestionIndex,
+                coachingMode: session.quinnMode,
+            },
+            target: {
+                track: session.trackId,
+                role: session.roleId,
+                company: session.companyName,
+                industry: session.industryId,
+            },
+            resumeContext: session.resumeContext || '',
+            lastUserMessage: lastUserMessage || session.lastUserMessage || 'Starting interview.',
+        };
+        // Generate response using new service
+        const result = await generateQuinnResponse(quinnInput);
+        // If interview is complete, don't add to questions list
+        if (result.isInterviewComplete) {
+            return res.json({
+                text: result.text,
+                isInterviewComplete: true,
+                questionNumber: currentQuestionIndex,
+                totalQuestions: QUINN_TOTAL_QUESTIONS,
+                diagnostic: result.diagnostic,
+            });
+        }
+        // Extract question for tracking (the last sentence with a question mark)
         const questionId = uuidv4();
         session.questions.push({
             id: questionId,
-            text: question.question,
-            competencyType: question.competencyType,
+            text: result.text,
+            competencyType: 'behavioral',
         });
-        const totalQuestions = 5; // Configurable limit
+        // Update last user message for context
+        if (lastUserMessage) {
+            session.lastUserMessage = lastUserMessage;
+        }
         res.json({
             questionId,
-            questionNumber,
-            totalQuestions,
-            ...question,
+            questionNumber: currentQuestionIndex + 1,
+            totalQuestions: QUINN_TOTAL_QUESTIONS,
+            text: result.text,
+            isInterviewComplete: false,
+            diagnostic: result.diagnostic,
+            fallback: result.fallback,
         });
     }
     catch (error) {

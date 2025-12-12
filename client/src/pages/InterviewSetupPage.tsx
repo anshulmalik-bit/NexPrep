@@ -1,8 +1,19 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useInterviewStore } from '../store/interview-store';
 import { popularCompanies } from '../data/tracks';
 import { NeuralKnot } from '../components/NeuralKnot';
+import { api } from '../services/api';
+import type { ATSAnalysis } from '../services/api';
+
+interface BriefingData {
+    overview: string;
+    marketPosition: string;
+    recentNews: string;
+    culture: string;
+    roleExpectations: string;
+    quinnPerspective: string;
+}
 
 export function InterviewSetupPage() {
     const navigate = useNavigate();
@@ -24,6 +35,36 @@ export function InterviewSetupPage() {
     const [resumeText, setResumeText] = useState('');
     const [quinnTone, setQuinnTone] = useState<'SUPPORTIVE' | 'DIRECT'>('SUPPORTIVE');
     const [isUploading, setIsUploading] = useState(false);
+    const [briefing, setBriefing] = useState<BriefingData | null>(null);
+    const [loadingBriefing, setLoadingBriefing] = useState(false);
+    const [atsAnalysis, setAtsAnalysis] = useState<ATSAnalysis | null>(null);
+
+    // Fetch company briefing when company is selected (with debounce for typing)
+    useEffect(() => {
+        if (companyName) {
+            // Debounce: wait 500ms after user stops typing
+            const timeoutId = setTimeout(async () => {
+                setLoadingBriefing(true);
+                try {
+                    const result = await api.getBriefing({
+                        companyName,
+                        roleId: roleId || 'general', // Use 'general' if no role selected
+                        quinnMode: quinnTone,
+                    });
+                    setBriefing(result);
+                } catch (error) {
+                    console.error('Failed to fetch briefing:', error);
+                    setBriefing(null);
+                } finally {
+                    setLoadingBriefing(false);
+                }
+            }, 500);
+
+            return () => clearTimeout(timeoutId);
+        } else {
+            setBriefing(null);
+        }
+    }, [companyName, roleId, quinnTone]);
 
     const filteredCompanies = popularCompanies.filter(c =>
         c.toLowerCase().includes(companySearch.toLowerCase())
@@ -35,12 +76,28 @@ export function InterviewSetupPage() {
 
         setIsUploading(true);
         setResumeFile(file);
+        setAtsAnalysis(null);
 
-        // Simulate file processing
-        setTimeout(() => {
-            setResumeText(`Parsed resume content from ${file.name}`);
+        try {
+            const result = await api.uploadResume(file, {
+                roleId: roleId || 'general',
+                companyName: companyName || undefined
+            });
+
+            setResumeText(result.text);
+
+            // Save to store
+            setResumeData(result.text, result.keywords, result.atsAnalysis);
+
+            if (result.atsAnalysis) {
+                setAtsAnalysis(result.atsAnalysis);
+            }
+        } catch (error) {
+            console.error('Resume upload failed:', error);
+            setResumeText('');
+        } finally {
             setIsUploading(false);
-        }, 1500);
+        }
     };
 
     const handleStartSimulation = () => {
@@ -85,6 +142,11 @@ export function InterviewSetupPage() {
                                     onChange={(e) => {
                                         setCompanySearch(e.target.value);
                                         setCompanyName(e.target.value);
+                                    }}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            e.preventDefault();
+                                        }
                                     }}
                                 />
                                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" aria-hidden="true">
@@ -151,28 +213,39 @@ export function InterviewSetupPage() {
                                         ))}
                                     </div>
 
-                                    <div className="bg-slate-50 rounded-xl p-4">
-                                        {activeTab === 'overview' && (
-                                            <p className="text-text-secondary text-sm">
-                                                Company overview and key information will be displayed here to help you prepare for your interview.
-                                            </p>
-                                        )}
-                                        {activeTab === 'news' && (
-                                            <p className="text-text-secondary text-sm">
-                                                Recent news and updates about {companyName} will appear here.
-                                            </p>
-                                        )}
-                                        {activeTab === 'culture' && (
-                                            <p className="text-text-secondary text-sm">
-                                                Culture insights and values of {companyName} will be shown here.
-                                            </p>
+                                    <div className="bg-slate-50 rounded-xl p-4 min-h-[80px]">
+                                        {loadingBriefing ? (
+                                            <div className="flex items-center gap-2">
+                                                <div className="animate-spin w-4 h-4 border-2 border-primary border-t-transparent rounded-full" />
+                                                <span className="text-sm text-text-secondary">Researching {companyName}...</span>
+                                            </div>
+                                        ) : briefing ? (
+                                            <>
+                                                {activeTab === 'overview' && (
+                                                    <div className="space-y-2">
+                                                        <p className="text-text-secondary text-sm">{briefing.overview}</p>
+                                                        <p className="text-text-secondary text-sm"><strong>Market Position:</strong> {briefing.marketPosition}</p>
+                                                    </div>
+                                                )}
+                                                {activeTab === 'news' && (
+                                                    <p className="text-text-secondary text-sm">{briefing.recentNews}</p>
+                                                )}
+                                                {activeTab === 'culture' && (
+                                                    <div className="space-y-2">
+                                                        <p className="text-text-secondary text-sm">{briefing.culture}</p>
+                                                        <p className="text-text-secondary text-sm"><strong>Role Expectations:</strong> {briefing.roleExpectations}</p>
+                                                    </div>
+                                                )}
+                                            </>
+                                        ) : (
+                                            <p className="text-text-muted text-sm italic">Select a company and role to see AI-powered research</p>
                                         )}
                                     </div>
                                 </div>
                             )}
 
                             {/* Quinn Insight */}
-                            {companyName && (
+                            {companyName && briefing && (
                                 <div className="mt-4 flex items-start gap-3 p-4 bg-primary/5 rounded-xl border border-primary/10">
                                     <div className="flex-shrink-0">
                                         <NeuralKnot size="sm" state="coaching" />
@@ -180,7 +253,7 @@ export function InterviewSetupPage() {
                                     <div>
                                         <p className="text-sm text-text font-medium">Quinn's Insight</p>
                                         <p className="text-sm text-text-secondary mt-1">
-                                            I'll tailor questions based on {companyName}'s interview style and culture.
+                                            {briefing.quinnPerspective || `I'll tailor questions based on ${companyName}'s interview style and culture.`}
                                         </p>
                                     </div>
                                 </div>
@@ -238,16 +311,81 @@ export function InterviewSetupPage() {
                                 )}
                             </div>
 
-                            {/* Quinn's First Impression */}
-                            {resumeFile && (
+                            {/* ATS Score Display */}
+                            {resumeFile && atsAnalysis && (
+                                <div className="mt-4 space-y-4">
+                                    {/* Score Header */}
+                                    <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-xl">
+                                        <div className={`w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold text-white
+                                            ${atsAnalysis.resumeScore >= 70 ? 'bg-green-500' :
+                                                atsAnalysis.resumeScore >= 40 ? 'bg-yellow-500' : 'bg-red-500'}`}>
+                                            {atsAnalysis.resumeScore}
+                                        </div>
+                                        <div>
+                                            <p className="font-semibold text-text">ATS Score</p>
+                                            <p className="text-sm text-text-secondary">
+                                                {atsAnalysis.resumeScore >= 70 ? 'Good match for this role' :
+                                                    atsAnalysis.resumeScore >= 40 ? 'Needs improvement' : 'Major gaps identified'}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {/* Score Breakdown */}
+                                    <div className="grid grid-cols-2 gap-2 text-sm">
+                                        <div className="flex justify-between p-2 bg-slate-50 rounded">
+                                            <span className="text-text-secondary">Role Relevance</span>
+                                            <span className="font-medium">{atsAnalysis.roleRelevance}%</span>
+                                        </div>
+                                        <div className="flex justify-between p-2 bg-slate-50 rounded">
+                                            <span className="text-text-secondary">Industry Fit</span>
+                                            <span className="font-medium">{atsAnalysis.industryFit}%</span>
+                                        </div>
+                                        <div className="flex justify-between p-2 bg-slate-50 rounded">
+                                            <span className="text-text-secondary">Achievements</span>
+                                            <span className="font-medium">{atsAnalysis.achievementsImpact}%</span>
+                                        </div>
+                                        <div className="flex justify-between p-2 bg-slate-50 rounded">
+                                            <span className="text-text-secondary">Communication</span>
+                                            <span className="font-medium">{atsAnalysis.communicationQuality}%</span>
+                                        </div>
+                                    </div>
+
+                                    {/* Weaknesses (Harsh Feedback) */}
+                                    {atsAnalysis.weaknesses.length > 0 && (
+                                        <div className="p-4 bg-red-50 rounded-xl border border-red-100">
+                                            <p className="font-medium text-red-700 mb-2">Issues Found:</p>
+                                            <ul className="text-sm text-red-600 space-y-1">
+                                                {atsAnalysis.weaknesses.slice(0, 4).map((w, i) => (
+                                                    <li key={i}>• {w}</li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    )}
+
+                                    {/* Strengths */}
+                                    {atsAnalysis.strengths.length > 0 && (
+                                        <div className="p-4 bg-green-50 rounded-xl border border-green-100">
+                                            <p className="font-medium text-green-700 mb-2">Strengths:</p>
+                                            <ul className="text-sm text-green-600 space-y-1">
+                                                {atsAnalysis.strengths.map((s, i) => (
+                                                    <li key={i}>• {s}</li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Fallback for resume without analysis */}
+                            {resumeFile && !atsAnalysis && !isUploading && (
                                 <div className="mt-4 flex items-start gap-3 p-4 bg-accent/5 rounded-xl border border-accent/10">
                                     <div className="flex-shrink-0">
                                         <NeuralKnot size="sm" state="speaking" />
                                     </div>
                                     <div>
-                                        <p className="text-sm text-text font-medium">Quinn's First Impression</p>
+                                        <p className="text-sm text-text font-medium">Resume Uploaded</p>
                                         <p className="text-sm text-text-secondary mt-1">
-                                            Great! I'll ask questions specific to your background and experiences.
+                                            I'll use your background to personalize the interview questions.
                                         </p>
                                     </div>
                                 </div>
@@ -255,8 +393,8 @@ export function InterviewSetupPage() {
                         </div>
                     </div>
 
-                    {/* Quinn Tone Selection */}
-                    <div className="max-w-6xl mx-auto mt-8">
+                    {/* Quinn Tone Selection - spans both columns */}
+                    <div className="lg:col-span-2 mt-4">
                         <div className="glass-card p-6">
                             <h3 className="text-lg font-semibold text-text mb-6 text-center">
                                 Quinn's Coaching Style

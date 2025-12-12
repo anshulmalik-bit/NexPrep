@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { v4 as uuidv4 } from 'uuid';
-import { generateQuestion } from '../services/quinn-question.js';
+import { generateQuestion, generateQuinnResponse } from '../services/quinn-question.js';
 import { generateHint } from '../services/quinn-hint.js';
 import { evaluateAnswer } from '../services/quinn-evaluation.js';
 import {
@@ -12,6 +12,12 @@ import {
     generateImprovementPlan,
 } from '../services/quinn-report.js';
 import { QuinnMode } from '../services/quinn-core.js';
+import {
+    QuinnGeneratorInput,
+    QuinnGeneratorOutput,
+    QUINN_TOTAL_QUESTIONS,
+    CoachingMode
+} from '../services/quinn-types.js';
 
 export const interviewRouter = Router();
 
@@ -24,6 +30,7 @@ const sessions = new Map<string, {
     industryId?: string;
     companySizeId?: string;
     resumeText?: string;
+    resumeContext?: string;  // Precomputed summary (max 100 words)
     questions: Array<{ id: string; text: string; competencyType: string }>;
     answers: Array<{
         questionId: string;
@@ -38,6 +45,7 @@ const sessions = new Map<string, {
             improvedSampleAnswer: string;
         };
     }>;
+    lastUserMessage?: string;  // Track last user message for context
 }>();
 
 // Start a new interview session
@@ -50,6 +58,12 @@ interviewRouter.post('/start', async (req, res) => {
         }
 
         const sessionId = uuidv4();
+
+        // Compute resumeContext from resumeText (max 100 words for token efficiency)
+        const resumeContext = resumeText
+            ? resumeText.split(/\s+/).slice(0, 100).join(' ')
+            : '';
+
         sessions.set(sessionId, {
             trackId,
             roleId,
@@ -58,61 +72,100 @@ interviewRouter.post('/start', async (req, res) => {
             industryId,
             companySizeId,
             resumeText,
+            resumeContext,
             questions: [],
             answers: [],
+            lastUserMessage: '',
         });
 
-        res.json({ sessionId });
+        res.json({ sessionId, totalQuestions: QUINN_TOTAL_QUESTIONS });
     } catch (error) {
         console.error('Error starting interview:', error);
         res.status(500).json({ error: 'Failed to start interview' });
     }
 });
 
-// Get next question
+// Get next question (NEW CONTRACT)
 interviewRouter.post('/question', async (req, res) => {
     try {
-        const { sessionId } = req.body;
+        const { sessionId, lastUserMessage } = req.body;
         const session = sessions.get(sessionId);
 
         if (!session) {
             return res.status(404).json({ error: 'Session not found' });
         }
 
-        const questionNumber = session.questions.length + 1;
-        const previousQuestions = session.questions.map((q) => q.text);
+        const requestId = uuidv4();
+        const currentQuestionIndex = session.questions.length;
 
-        const question = await generateQuestion({
-            track: session.trackId,
-            role: session.roleId,
-            quinnMode: session.quinnMode,
-            resumeText: session.resumeText,
-            companyName: session.companyName,
-            industryId: session.industryId,
-            companySizeId: session.companySizeId,
-            questionNumber,
-            previousQuestions,
-        });
+        // Build input for new Quinn generator
+        const quinnInput: QuinnGeneratorInput = {
+            sessionId,
+            requestId,
+            clientState: {
+                currentQuestionIndex,
+                coachingMode: session.quinnMode as CoachingMode,
+            },
+            target: {
+                track: session.trackId,
+                role: session.roleId,
+                company: session.companyName,
+                industry: session.industryId,
+            },
+            resumeContext: session.resumeContext || '',
+            lastUserMessage: lastUserMessage || session.lastUserMessage || 'Starting interview.',
+            // Pass conversation history for tone memory
+            conversationHistory: session.answers.map(a => ({
+                question: a.question,
+                answer: a.answer
+            })),
+        };
 
+        // Generate response using new service
+        const result: QuinnGeneratorOutput = await generateQuinnResponse(quinnInput);
+
+        // If interview is complete, don't add to questions list
+        if (result.isInterviewComplete) {
+            return res.json({
+                text: result.text,
+                isInterviewComplete: true,
+                questionNumber: currentQuestionIndex,
+                totalQuestions: QUINN_TOTAL_QUESTIONS,
+                diagnostic: result.diagnostic,
+            });
+        }
+
+        // Extract question for tracking (the last sentence with a question mark)
         const questionId = uuidv4();
         session.questions.push({
             id: questionId,
-            text: question.question,
-            competencyType: question.competencyType,
+            text: result.text,
+            competencyType: 'behavioral',
         });
 
-        const totalQuestions = 5; // Configurable limit
+        // Update last user message for context
+        if (lastUserMessage) {
+            session.lastUserMessage = lastUserMessage;
+        }
+
         res.json({
             questionId,
-            questionNumber,
-            totalQuestions,
-            ...question,
+            questionNumber: currentQuestionIndex + 1,
+            totalQuestions: QUINN_TOTAL_QUESTIONS,
+            question: result.text,  // Client expects 'question' field, not 'text'
+            competencyType: 'behavioral',
+            difficulty: currentQuestionIndex <= 2 ? 'easy' : currentQuestionIndex <= 7 ? 'medium' : 'hard',
+            hintsAvailable: true,
+            isInterviewComplete: false,
+            diagnostic: result.diagnostic,
+            fallback: result.fallback,
         });
     } catch (error) {
         console.error('Error generating question:', error);
         res.status(500).json({ error: 'Failed to generate question' });
     }
 });
+
 
 // Submit answer
 interviewRouter.post('/answer', async (req, res) => {

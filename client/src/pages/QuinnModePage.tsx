@@ -36,7 +36,7 @@ export function QuinnModePage() {
                 </button>
 
                 <div className="text-center mb-6">
-                    <div className="mx-auto mb-4">
+                    <div className="mx-auto mb-4 flex justify-center">
                         <NeuralKnot size="sm" state="idle" />
                     </div>
                     <h2 className="text-xl font-bold text-text">

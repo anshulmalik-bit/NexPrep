@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Navbar } from './components/Navbar';
 import { ScrollToTop } from './components/ScrollToTop';
+import { ToastProvider } from './components/Toast';
 import { HomePage } from './pages/HomePage';
 import { ChoosePathPage } from './pages/ChoosePathPage';
 import { TracksPage } from './pages/TracksPage';
@@ -19,27 +20,29 @@ import { MainLayout } from './components/MainLayout';
 function App() {
   return (
     <BrowserRouter>
-      <ScrollToTop />
-      <Navbar />
-      <Routes>
-        <Route element={<MainLayout />}>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/how-it-works" element={<HowItWorksPage />} />
-          <Route path="/choose-path" element={<ChoosePathPage />} />
-          <Route path="/tracks" element={<TracksPage />} />
-          <Route path="/tracks/:trackId" element={<RolePage />} />
-          <Route path="/setup" element={<InterviewSetupPage />} />
-          <Route path="/setup/quinn-mode" element={<QuinnModePage />} />
-          <Route path="/calibration" element={<CalibrationPage />} />
-          <Route path="/evaluation" element={<EvaluationPage />} />
-          <Route path="/leaderboard" element={<LeaderboardPage />} />
-          <Route path="/resources" element={<ResourcesPage />} />
-          <Route path="/contact" element={<ContactPage />} />
-        </Route>
+      <ToastProvider>
+        <ScrollToTop />
+        <Navbar />
+        <Routes>
+          <Route element={<MainLayout />}>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/how-it-works" element={<HowItWorksPage />} />
+            <Route path="/choose-path" element={<ChoosePathPage />} />
+            <Route path="/tracks" element={<TracksPage />} />
+            <Route path="/tracks/:trackId" element={<RolePage />} />
+            <Route path="/setup" element={<InterviewSetupPage />} />
+            <Route path="/setup/quinn-mode" element={<QuinnModePage />} />
+            <Route path="/calibration" element={<CalibrationPage />} />
+            <Route path="/evaluation" element={<EvaluationPage />} />
+            <Route path="/leaderboard" element={<LeaderboardPage />} />
+            <Route path="/resources" element={<ResourcesPage />} />
+            <Route path="/contact" element={<ContactPage />} />
+          </Route>
 
-        {/* Standalone pages (no footer) */}
-        <Route path="/interview" element={<InterviewPage />} />
-      </Routes>
+          {/* Standalone pages (no footer) */}
+          <Route path="/interview" element={<InterviewPage />} />
+        </Routes>
+      </ToastProvider>
     </BrowserRouter>
   );
 }

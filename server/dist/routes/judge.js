@@ -1,11 +1,11 @@
 import { Router } from 'express';
-import { judgeContent } from '../services/quinn-content-judge.js';
+import { evaluateInterview, quickJudgeAnswer } from '../services/master-judge.js';
 const router = Router();
 /**
  * POST /api/judge/content
  *
- * Evaluates a user's interview answer and returns structured feedback.
- * Uses Gemini to analyze content quality, structure, and relevance.
+ * Quick evaluation of a single interview answer.
+ * Uses Groq for fast per-answer feedback.
  */
 router.post('/content', async (req, res) => {
     const startTime = Date.now();
@@ -43,22 +43,27 @@ router.post('/content', async (req, res) => {
                 latency_ms: Date.now() - startTime
             });
         }
-        // Build input for the judge
-        const input = {
-            questionId,
-            questionText,
-            transcript,
-            transcriptConfidence: transcriptConfidence || 1.0,
+        // Use the new quickJudgeAnswer for fast feedback
+        const quickInput = {
+            question: questionText,
+            answer: transcript,
             role,
-            company: company || null,
-            track,
-            experienceLevel: experienceLevel || 'Mid',
             quinnMode,
-            resumeKeywords: resumeKeywords || [],
-            maxResponseTimeMs: maxResponseTimeMs || 7000
         };
-        // Call the content judge
-        const result = await judgeContent(input);
+        const quickResult = await quickJudgeAnswer(quickInput);
+        // Map to ContentJudgeOutput format for backward compatibility
+        const result = {
+            status: 'OK',
+            content_score: quickResult.score,
+            content_strength: quickResult.strength,
+            content_fix: quickResult.fix,
+            content_label: quickResult.label,
+            key_evidence: null,
+            suggested_rewrite: null,
+            explainability: [],
+            resource_ids: [],
+            latency_ms: Date.now() - startTime
+        };
         // Log for monitoring (no PII)
         console.log(`[Judge] questionId=${questionId} score=${result.content_score} label=${result.content_label} latency=${result.latency_ms}ms status=${result.status}`);
         // Return result
@@ -82,10 +87,93 @@ router.post('/content', async (req, res) => {
     }
 });
 /**
+ * POST /api/judge/interview
+ *
+ * Full interview evaluation using the Master Judge.
+ * Evaluates all answers with text, voice, and video metrics.
+ */
+router.post('/interview', async (req, res) => {
+    const startTime = Date.now();
+    try {
+        const { answers, role, industry, company, resumeSummary } = req.body;
+        // Validate required fields
+        if (!answers || !Array.isArray(answers) || answers.length === 0) {
+            return res.status(400).json({
+                error: 'Missing or empty answers array',
+                textScore: 0,
+                voiceScore: 0,
+                videoScore: 0,
+                questionBreakdown: [],
+                strengths: [],
+                weaknesses: [],
+                behavioralPatterns: '',
+                improvementPlan: {
+                    summary: 'No answers to evaluate.',
+                    sevenDayPlan: []
+                }
+            });
+        }
+        if (!role) {
+            return res.status(400).json({
+                error: 'Missing required field: role',
+                textScore: 0,
+                voiceScore: 0,
+                videoScore: 0,
+                questionBreakdown: [],
+                strengths: [],
+                weaknesses: [],
+                behavioralPatterns: '',
+                improvementPlan: {
+                    summary: 'Role is required for evaluation.',
+                    sevenDayPlan: []
+                }
+            });
+        }
+        // Build input for Master Judge
+        const input = {
+            answers,
+            role,
+            industry,
+            company,
+            resumeSummary
+        };
+        // Call the Master Judge
+        const result = await evaluateInterview(input);
+        // Log for monitoring
+        console.log(`[MasterJudge] role=${role} textScore=${result.textScore} voiceScore=${result.voiceScore} videoScore=${result.videoScore} latency=${result.diagnostic?.latencyMs}ms`);
+        return res.json(result);
+    }
+    catch (error) {
+        console.error('[MasterJudge] Unexpected error:', error);
+        return res.status(500).json({
+            error: 'Internal server error',
+            textScore: 0,
+            voiceScore: 0,
+            videoScore: 0,
+            questionBreakdown: [],
+            strengths: [],
+            weaknesses: [],
+            behavioralPatterns: '',
+            improvementPlan: {
+                summary: 'An error occurred during evaluation.',
+                sevenDayPlan: [
+                    'Day 1: Review interview basics',
+                    'Day 2: Practice STAR method',
+                    'Day 3: Focus on clarity',
+                    'Day 4: Work on examples',
+                    'Day 5: Practice conciseness',
+                    'Day 6: Self-record practice',
+                    'Day 7: Full mock interview'
+                ]
+            }
+        });
+    }
+});
+/**
  * GET /api/judge/health
  * Health check for the judge endpoint
  */
 router.get('/health', (_req, res) => {
-    res.json({ status: 'ok', service: 'content-judge' });
+    res.json({ status: 'ok', service: 'master-judge' });
 });
 export default router;

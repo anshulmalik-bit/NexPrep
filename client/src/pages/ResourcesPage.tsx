@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { useToast } from '../components/Toast';
 
 interface Resource {
     id: string;
@@ -83,6 +84,7 @@ const categoryLabels = {
 };
 
 export function ResourcesPage() {
+    const { showToast } = useToast();
     return (
         <div className="min-h-screen bg-canvas pt-[72px]">
             <div className="container py-12">
@@ -99,7 +101,7 @@ export function ResourcesPage() {
                     {resources.map((resource) => (
                         <button
                             key={resource.id}
-                            onClick={() => alert(`${resource.title} - Coming soon!`)}
+                            onClick={() => showToast(`${resource.title} - Coming soon!`, 'info')}
                             className={`glass-card p-6 hover-lift cursor-pointer group bg-gradient-to-br ${categoryColors[resource.category]} border text-left w-full transition-all active:scale-[0.98]`}
                         >
                             <div className="flex items-start justify-between mb-4">

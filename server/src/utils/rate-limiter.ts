@@ -97,7 +97,7 @@ export class TokenBucketRateLimiter {
         if (this.circuitOpen) {
             if (Date.now() > this.circuitResetTime) {
                 this.circuitOpen = false;
-                console.log('[Groq] Circuit Breaker Reset.');
+                // console.log('[Groq] Circuit Breaker Reset.');
             } else {
                 return false;
             }

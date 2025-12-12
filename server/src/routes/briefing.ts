@@ -16,6 +16,8 @@ briefingRouter.post('/', async (req, res) => {
             ? `Company: ${companyName}`
             : `Industry: ${industryId || 'General'}, Size: ${companySizeId || 'Unspecified'}`;
 
+        console.log('[Briefing] Generating AI briefing for:', { companyName, roleId, industryId });
+
         const prompt = `Role: Corporate Strategy Analyst.
 Task: Briefing for ${roleId}.
 Context: ${context}.
@@ -31,10 +33,12 @@ Output JSON:
 
         try {
             const provider = LLMFactory.getProvider();
+            console.log('[Briefing] Calling LLM provider:', provider.getProviderName());
             const result = await provider.generateJson(prompt, { temperature: 0.6 });
+            console.log('[Briefing] AI response received successfully');
             return res.json(result);
         } catch (error) {
-            console.error('LLM Briefing Error', error);
+            console.error('[Briefing] AI failed, using fallback:', error);
             // Fallthrough to fallback
         }
 

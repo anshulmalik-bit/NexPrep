@@ -134,7 +134,7 @@ export function ChoosePathPage() {
                             </div>
                         ) : (
                             <div className="glass-card p-12 text-center">
-                                <div className="mx-auto mb-4 opacity-50">
+                                <div className="mx-auto mb-4 opacity-50 flex justify-center">
                                     <NeuralKnot size="sm" state="idle" />
                                 </div>
                                 <p className="text-text-secondary">

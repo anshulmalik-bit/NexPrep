@@ -24,7 +24,7 @@ export const NeuralKnot: FC<NeuralKnotProps> = ({
     className = '',
 }) => {
     return (
-        <div className={`relative rounded-full flex items-center justify-center ${sizeMap[size]} ${className}`}>
+        <div className={`relative rounded-full flex items-center justify-center flex-shrink-0 ${sizeMap[size]} ${className}`}>
             <img
                 src="/quinn-knot.png"
                 alt="Quinn AI"

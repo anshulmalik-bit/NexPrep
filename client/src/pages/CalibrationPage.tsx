@@ -204,6 +204,20 @@ export function CalibrationPage() {
         return () => clearTimeout(timer);
     }, []);
 
+    // Attach stream to video element when it becomes available
+    useEffect(() => {
+        if (cameraStatus === 'ready' && videoRef.current && streamRef.current) {
+            videoRef.current.srcObject = streamRef.current;
+
+            // Re-attach lighting check
+            videoRef.current.onloadeddata = () => {
+                setTimeout(() => {
+                    checkLighting();
+                }, 1000);
+            };
+        }
+    }, [cameraStatus, checkLighting]);
+
     const handleContinue = () => {
         // Mark calibration as complete in store
         setCalibrationComplete(true);

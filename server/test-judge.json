@@ -1,0 +1,8 @@
+{
+    "questionId": "test-1",
+    "questionText": "Tell me about yourself",
+    "transcript": "I am a software developer with experience building web applications and mobile apps.",
+    "role": "developer",
+    "track": "tech",
+    "quinnMode": "SUPPORTIVE"
+}

@@ -1011,3 +1011,25 @@
 .safe-bottom {
   bottom: max(0.75rem, env(safe-area-inset-bottom));
 }
+/* Toast Notifications */
+.toast-container {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.toast {
+    padding: 16px;
+    border-radius: 12px;
+    background: white;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    border: 1px solid rgba(0,0,0,0.05);
+    min-width: 300px;
+    transform-origin: bottom right;
+}
+.toast--info { border-left: 4px solid #6366f1; }
+.toast--success { border-left: 4px solid #22c55e; }
+.toast--error { border-left: 4px solid #ef4444; }

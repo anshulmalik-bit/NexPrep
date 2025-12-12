@@ -21,6 +21,7 @@ interface QuestionResponse {
     competencyType: 'behavioral' | 'technical' | 'communication' | 'role-specific';
     difficulty: 'easy' | 'medium' | 'hard';
     hintsAvailable: boolean;
+    isInterviewComplete?: boolean;
 }
 
 interface EvaluationResponse {
@@ -44,6 +45,29 @@ interface BriefingResponse {
     culture: string;
     roleExpectations: string;
     quinnPerspective: string;
+}
+
+// ATS Score types
+export interface ATSAnalysis {
+    resumeScore: number;
+    roleRelevance: number;
+    industryFit: number;
+    achievementsImpact: number;
+    communicationQuality: number;
+    professionalismPolish: number;
+    strengths: string[];
+    weaknesses: string[];
+    roleFitSummary: string;
+    companyFitSummary: string;
+    improvementSuggestions: string[];
+}
+
+interface ResumeUploadResponse {
+    text: string;
+    keywords: string[];
+    status: 'success' | 'partial' | 'failed';
+    atsScore?: number;
+    atsAnalysis?: ATSAnalysis;
 }
 
 interface LeaderboardEntry {
@@ -163,9 +187,11 @@ class ApiService {
     }
 
     // Resume
-    async uploadResume(file: File): Promise<{ text: string; keywords: string[]; status: 'success' | 'partial' | 'failed' }> {
+    async uploadResume(file: File, options?: { roleId?: string; companyName?: string }): Promise<ResumeUploadResponse> {
         const formData = new FormData();
         formData.append('resume', file);
+        if (options?.roleId) formData.append('roleId', options.roleId);
+        if (options?.companyName) formData.append('companyName', options.companyName);
 
         const response = await fetch(`${API_BASE}/resume/upload`, {
             method: 'POST',
@@ -177,6 +203,14 @@ class ApiService {
         }
 
         return response.json();
+    }
+
+    // Analyze resume text without upload
+    async analyzeResume(resumeText: string, roleId?: string, companyName?: string): Promise<ATSAnalysis> {
+        return this.request('/resume/analyze', {
+            method: 'POST',
+            body: JSON.stringify({ resumeText, roleId, companyName }),
+        });
     }
 
     // Briefing

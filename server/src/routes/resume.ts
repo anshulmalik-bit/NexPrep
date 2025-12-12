@@ -1,16 +1,24 @@
 import { Router } from 'express';
 import multer from 'multer';
+import { judgeResume, ResumeJudgeOutput } from '../services/resume-judge.js';
 
 export const resumeRouter = Router();
+
+const ALLOWED_MIMETYPES = [
+    'application/pdf',
+    'application/msword',  // .doc
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',  // .docx
+    'text/plain',  // .txt
+];
 
 const upload = multer({
     storage: multer.memoryStorage(),
     limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
     fileFilter: (req, file, cb) => {
-        if (file.mimetype === 'application/pdf') {
+        if (ALLOWED_MIMETYPES.includes(file.mimetype)) {
             cb(null, true);
         } else {
-            cb(new Error('Only PDF files are allowed'));
+            cb(new Error('Only PDF, DOC, DOCX, and TXT files are allowed'));
         }
     },
 });
@@ -21,16 +29,31 @@ resumeRouter.post('/upload', upload.single('resume'), async (req, res) => {
             return res.status(400).json({ error: 'No file uploaded' });
         }
 
-        // Attempt to extract text from PDF
+        const { roleId, companyName, industryId } = req.body;
+
+        // Extract text based on file type
         let text = '';
         let keywords: string[] = [];
         let status: 'success' | 'partial' | 'failed' = 'partial';
 
         try {
-            // Dynamic import for pdf-parse (it's a CommonJS module)
-            const pdfParse = (await import('pdf-parse')).default;
-            const data = await pdfParse(req.file.buffer);
-            text = data.text;
+            const mimetype = req.file.mimetype;
+
+            if (mimetype === 'text/plain') {
+                // Plain text file - just convert buffer to string
+                text = req.file.buffer.toString('utf-8');
+            } else if (mimetype === 'application/pdf') {
+                // PDF file - use pdf-parse
+                const pdfParse = (await import('pdf-parse')).default;
+                const data = await pdfParse(req.file.buffer);
+                text = data.text;
+            } else if (mimetype === 'application/msword' ||
+                mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+                // DOC/DOCX - extract text as raw (basic fallback)
+                // For DOC/DOCX, we'll treat it as text for now
+                // In production, you'd use mammoth or similar library
+                text = req.file.buffer.toString('utf-8').replace(/[^\x20-\x7E\n\r]/g, ' ');
+            }
 
             if (text && text.length > 100) {
                 status = 'success';
@@ -50,8 +73,20 @@ resumeRouter.post('/upload', upload.single('resume'), async (req, res) => {
                 status = 'partial';
             }
         } catch (parseError) {
-            console.error('PDF parsing error:', parseError);
+            console.error('File parsing error:', parseError);
             status = 'failed';
+        }
+
+        // AI-powered resume scoring (if roleId provided)
+        let atsScore: ResumeJudgeOutput | null = null;
+        if (text && text.length > 100 && roleId) {
+            console.log('[Resume] Running AI judge for role:', roleId);
+            atsScore = await judgeResume({
+                resumeText: text,
+                roleId,
+                companyName,
+                industryId,
+            });
         }
 
         // Don't store the resume - discard after processing (anonymity)
@@ -59,6 +94,8 @@ resumeRouter.post('/upload', upload.single('resume'), async (req, res) => {
             text: text.substring(0, 2000), // Limit text length for API
             keywords,
             status,
+            atsScore: atsScore?.resumeScore,
+            atsAnalysis: atsScore,
         });
     } catch (error) {
         console.error('Resume upload error:', error);
@@ -67,5 +104,30 @@ resumeRouter.post('/upload', upload.single('resume'), async (req, res) => {
             keywords: [],
             status: 'failed',
         });
+    }
+});
+
+// Separate endpoint for analyzing resume text without upload
+resumeRouter.post('/analyze', async (req, res) => {
+    try {
+        const { resumeText, roleId, companyName, industryId } = req.body;
+
+        if (!resumeText || resumeText.length < 50) {
+            return res.status(400).json({ error: 'Resume text is required (min 50 chars)' });
+        }
+
+        console.log('[Resume] Analyzing resume for role:', roleId || 'general');
+
+        const result = await judgeResume({
+            resumeText,
+            roleId: roleId || 'general',
+            companyName,
+            industryId,
+        });
+
+        res.json(result);
+    } catch (error) {
+        console.error('Resume analysis error:', error);
+        res.status(500).json({ error: 'Failed to analyze resume' });
     }
 });

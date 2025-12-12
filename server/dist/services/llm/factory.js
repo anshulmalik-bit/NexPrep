@@ -4,7 +4,7 @@ export class LLMFactory {
     static instance;
     static getProvider() {
         if (!this.instance) {
-            const providerType = process.env.LLM_PROVIDER || 'gemini';
+            const providerType = process.env.LLM_PROVIDER || 'groq';
             switch (providerType.toLowerCase()) {
                 case 'gemini':
                     console.log('Using LLM Provider: Gemini');
@@ -15,8 +15,8 @@ export class LLMFactory {
                     this.instance = new GroqProvider();
                     break;
                 default:
-                    console.warn(`Unknown LLM_PROVIDER '${providerType}', defaulting to Gemini`);
-                    this.instance = new GeminiProvider();
+                    console.warn(`Unknown LLM_PROVIDER '${providerType}', defaulting to Groq`);
+                    this.instance = new GroqProvider();
             }
         }
         return this.instance;
