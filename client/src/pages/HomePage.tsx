@@ -44,7 +44,8 @@ export function HomePage() {
                             {/* Neural Knot - directly rendered */}
                             <div className="relative">
                                 <NeuralKnot state="intro" />
-                                <div className="absolute top-0 right-0 md:-top-6 md:-right-6 bg-white px-4 py-2 md:px-6 md:py-3 rounded-tr-2xl rounded-tl-2xl rounded-br-2xl shadow-xl animate-bounce z-10" style={{ animationDuration: '3s' }}>
+                                {/* Hi Bubble - Hidden on mobile, visible on tablet+ */}
+                                <div className="hidden sm:block absolute -top-4 -right-2 md:-top-6 md:-right-6 bg-white px-4 py-2 md:px-6 md:py-3 rounded-2xl shadow-xl z-10" style={{ animation: 'bounce 3s ease-in-out infinite' }}>
                                     <span className="text-xl md:text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">
                                         Hi! 👋
                                     </span>

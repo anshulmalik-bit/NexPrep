@@ -82,8 +82,8 @@ export const HUDContainer: React.FC = () => {
         return (
             <button
                 onClick={toggleHud}
-                className="fixed bottom-4 right-4 p-3 bg-surface rounded-full shadow-frost-lg
-                         hover:shadow-neural transition-all duration-300"
+                className="hidden lg:flex fixed bottom-20 right-3 sm:bottom-24 sm:right-4 safe-bottom p-3 bg-surface rounded-full shadow-frost-lg
+                         hover:shadow-neural transition-all duration-300 items-center justify-center"
                 style={{ zIndex: 'var(--z-hud)' }}
                 aria-label="Show HUD"
             >
@@ -110,7 +110,9 @@ export const HUDContainer: React.FC = () => {
 
     return (
         <div
-            className="fixed bottom-4 right-4 w-64 bg-surface/95 backdrop-blur-frost 
+            className="hidden lg:block fixed bottom-20 right-3 sm:bottom-24 sm:right-4 safe-bottom
+                       w-[calc(100vw-24px)] max-w-[280px] sm:w-72 
+                       bg-surface/95 backdrop-blur-frost 
                        rounded-2xl shadow-frost-lg border border-slate-200 overflow-hidden
                        transition-all duration-300"
             style={{ zIndex: 'var(--z-hud)' }}
@@ -162,7 +164,10 @@ export const HUDContainer: React.FC = () => {
                         <span className="text-slate-400 text-sm">Starting camera...</span>
                     </div>
                 ) : (
-                    <span className="text-slate-500 text-sm">Camera not enabled</span>
+                    <div className="text-center p-3">
+                        <span className="text-2xl mb-1.5 block opacity-60">📷</span>
+                        <span className="text-slate-400 text-xs">Camera not enabled</span>
+                    </div>
                 )}
 
                 {/* Teal mesh overlay effect */}

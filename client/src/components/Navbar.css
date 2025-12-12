@@ -36,6 +36,8 @@
     font-size: var(--text-xl);
     font-weight: var(--font-bold);
     color: var(--color-text);
+    flex-shrink: 0;
+    max-width: 50%;
 }
 
 .navbar__logo-icon {

@@ -137,14 +137,14 @@ export function EvaluationPage() {
             <div className="min-h-screen bg-canvas pt-[72px]">
                 <Confetti trigger={showConfetti} />
 
-                {/* Story Progress */}
+                {/* Story Progress - Fixed segments with min-width */}
                 <div className="fixed top-[72px] left-0 right-0 z-30 px-4 pt-4 bg-canvas">
                     <div className="flex gap-1.5">
                         {slides.map((_, i) => (
                             <button
                                 key={i}
                                 onClick={() => setCurrentSlide(i)}
-                                className={`flex-1 h-1 rounded-full transition-all duration-300
+                                className={`flex-1 min-w-[24px] h-1.5 rounded-full transition-all duration-300
                                     ${i === currentSlide
                                         ? 'bg-primary'
                                         : i < currentSlide
@@ -393,10 +393,16 @@ function SlideContent({
                         <span className="text-xs text-text-secondary mt-1">Average Score</span>
                     </div>
                     <h2 className="text-2xl font-bold text-text mb-2">
-                        {avgScore >= 80 ? 'Excellent Work!' : avgScore >= 60 ? 'Good Job!' : 'Keep Practicing!'}
+                        {avgScore >= 80 ? 'Excellent Work! 🎉' : avgScore >= 60 ? 'Good Progress!' : avgScore >= 40 ? 'Keep Building!' : 'Every Step Counts!'}
                     </h2>
                     <p className="text-text-secondary">
-                        {report?.summary?.slice(0, 100)}...
+                        {avgScore >= 80
+                            ? "You're interview-ready! Keep refining your skills."
+                            : avgScore >= 60
+                                ? "You're almost there! Focus on your improvement areas."
+                                : avgScore >= 40
+                                    ? "Great start! Practice the suggested frameworks."
+                                    : report?.summary?.slice(0, 100) + '...'}
                     </p>
                 </div>
             );

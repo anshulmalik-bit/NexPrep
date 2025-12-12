@@ -506,7 +506,7 @@ export function InterviewPage() {
                     </div>
 
                     {/* Input Area - Now using SmartInput */}
-                    <div className="border-t border-slate-100 bg-white p-4">
+                    <div className="border-t border-slate-100 bg-white p-4 pb-safe">
                         <div className="max-w-3xl mx-auto">
                             {connectionError ? (
                                 <div className="flex flex-col items-center gap-3">
@@ -669,7 +669,7 @@ export function InterviewPage() {
             {/* Mobile Bottom Sheet Toggle */}
             <button
                 onClick={toggleBottomSheet}
-                className="lg:hidden fixed bottom-24 right-4 w-12 h-12 bg-primary text-white rounded-full shadow-frost-lg flex items-center justify-center z-40"
+                className="lg:hidden fixed bottom-32 right-4 w-12 h-12 safe-bottom bg-primary text-white rounded-full shadow-frost-lg flex items-center justify-center z-40"
             >
                 📊
             </button>

@@ -29,25 +29,31 @@ export function ChoosePathPage() {
                 </div>
 
                 {/* Mobile: Horizontal Scrollable Track Pills */}
-                <div className="lg:hidden mb-8">
-                    <div className="flex gap-2 overflow-x-auto pb-4 scrollbar-hide snap-x-mandatory">
-                        {tracks.map((track) => (
-                            <button
-                                key={track.id}
-                                onClick={() => {
-                                    setSelectedTrack(track);
-                                    setSelectedRole(null);
-                                }}
-                                className={`flex-shrink-0 snap-start px-4 py-2 rounded-full font-medium text-sm whitespace-nowrap transition-all duration-200
-                                    ${selectedTrack?.id === track.id
-                                        ? 'bg-gradient-to-r from-primary to-primary-light text-white shadow-frost'
-                                        : 'bg-white border border-slate-200 text-text hover:border-primary/30'
-                                    }`}
-                            >
-                                <span className="mr-1.5">{track.emoji}</span>
-                                {track.name}
-                            </button>
-                        ))}
+                <div className="lg:hidden mb-8 -mx-4 px-4">
+                    {/* Wrapper with overflow-visible for shadow, inner scroll */}
+                    <div className="overflow-x-auto pb-6 pt-3 -mb-2 scrollbar-hide">
+                        <div className="flex gap-3 px-1">
+                            {tracks.map((track) => (
+                                <button
+                                    key={track.id}
+                                    onClick={() => {
+                                        setSelectedTrack(track);
+                                        setSelectedRole(null);
+                                    }}
+                                    className={`flex-shrink-0 px-4 py-2.5 rounded-full font-medium text-sm whitespace-nowrap transition-all duration-200
+                                        ${selectedTrack?.id === track.id
+                                            ? 'bg-gradient-to-r from-primary to-primary-light text-white'
+                                            : 'bg-white border border-slate-200 text-text hover:border-primary/30'
+                                        }`}
+                                    style={selectedTrack?.id === track.id ? {
+                                        filter: 'drop-shadow(0 4px 12px rgba(99, 102, 241, 0.4))'
+                                    } : {}}
+                                >
+                                    <span className="mr-1.5">{track.emoji}</span>
+                                    {track.name}
+                                </button>
+                            ))}
+                        </div>
                     </div>
                 </div>
 
@@ -56,8 +62,7 @@ export function ChoosePathPage() {
                     {/* Left: Track Grid (Desktop) */}
                     <div className="hidden lg:block lg:w-1/2">
                         <h3 className="text-lg font-semibold text-text mb-4">Select Track</h3>
-                        <h3 className="text-lg font-semibold text-text mb-4">Select Track</h3>
-                        <div className="grid grid-cols-2 gap-6 p-4 -m-4">
+                        <div className="grid grid-cols-2 gap-4">
                             {tracks.map((track) => (
                                 <button
                                     key={track.id}
@@ -102,7 +107,7 @@ export function ChoosePathPage() {
                         </h3>
 
                         {selectedTrack ? (
-                            <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2 scrollbar-hide">
+                            <div className="space-y-3 lg:max-h-[500px] max-h-[calc(100vh-400px)] overflow-y-auto pr-2 pb-24 lg:pb-2 scrollbar-hide">
                                 {selectedTrack.roles.map((role) => (
                                     <button
                                         key={role.id}
@@ -138,8 +143,8 @@ export function ChoosePathPage() {
                             </div>
                         )}
 
-                        {/* Continue Button */}
-                        <div className="mt-8">
+                        {/* Continue Button - Desktop Only */}
+                        <div className="mt-8 hidden lg:block">
                             <button
                                 onClick={handleContinue}
                                 disabled={!selectedTrack || !selectedRole}
@@ -179,7 +184,7 @@ export function ChoosePathPage() {
                                     : 'bg-slate-100 text-text-muted cursor-not-allowed'
                                 }`}
                         >
-                            {selectedRole ? 'Continue →' : 'Select a role'}
+                            {selectedRole ? `Continue as ${selectedRole.name} →` : 'Select a role'}
                         </button>
                     </div>
                 )}

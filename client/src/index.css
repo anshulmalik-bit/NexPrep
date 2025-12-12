@@ -92,6 +92,13 @@
     min-height: 100dvh;
   }
 
+  /* Root container - prevent horizontal overflow globally (P0) */
+  #root {
+    max-width: 100vw;
+    overflow-x: hidden;
+    position: relative;
+  }
+
   /* Force safe word breaking on all text (P0) */
   h1,
   h2,
@@ -148,7 +155,7 @@
 
 @layer components {
 
-  /* Container */
+  /* Container - Mobile-first with safe overflow */
   .container {
     width: 100%;
     max-width: 1280px;
@@ -156,6 +163,7 @@
     margin-right: auto;
     padding-left: 1rem;
     padding-right: 1rem;
+    box-sizing: border-box;
   }
 
   @media (min-width: 640px) {
@@ -172,7 +180,7 @@
     }
   }
 
-  /* Glass Cards */
+  /* Glass Cards - Mobile-safe */
   .glass-card {
     background: rgba(255, 255, 255, 0.92);
     backdrop-filter: blur(10px);
@@ -180,6 +188,8 @@
     border: 1px solid rgba(255, 255, 255, 0.5);
     box-shadow: var(--shadow-frost);
     transition: all 0.3s ease;
+    box-sizing: border-box;
+    max-width: 100%;
   }
 
   .glass-card:hover {
@@ -636,6 +646,7 @@
         rgba(99, 102, 241, 0.4) 100%) border-box;
     -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
     -webkit-mask-composite: xor;
+    mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
     mask-composite: exclude;
   }
 
@@ -872,4 +883,84 @@
     opacity: 1;
     height: 50%;
   }
+}
+
+/* ===========================
+   Mobile Touch Feedback
+   =========================== */
+
+/* Active states for touch devices */
+@media (hover: none) and (pointer: coarse) {
+
+  .btn-primary:active,
+  .btn-cta:active,
+  .btn-ghost:active {
+    transform: scale(0.97);
+    opacity: 0.9;
+  }
+
+  .glass-card:active {
+    transform: scale(0.98);
+  }
+
+  /* Remove hover effects on touch */
+  .hover-lift:hover {
+    transform: none;
+  }
+}
+
+/* ===========================
+   Reduced Motion Preference
+   =========================== */
+
+@media (prefers-reduced-motion: reduce) {
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ===========================
+   Scroll Fade Edges Utility
+   =========================== */
+
+.scroll-fade-container {
+  position: relative;
+}
+
+.scroll-fade-container::before,
+.scroll-fade-container::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 20px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.scroll-fade-container::before {
+  left: 0;
+  background: linear-gradient(to right, var(--color-canvas), transparent);
+}
+
+.scroll-fade-container::after {
+  right: 0;
+  background: linear-gradient(to left, var(--color-canvas), transparent);
+}
+
+/* ===========================
+   Safe Area Padding (iOS)
+   =========================== */
+
+.pb-safe {
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+}
+
+.safe-bottom {
+  bottom: max(0.75rem, env(safe-area-inset-bottom));
 }

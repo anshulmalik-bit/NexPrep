@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { NeuralKnot } from './NeuralKnot';
 
@@ -8,6 +8,18 @@ export function Navbar() {
     const location = useLocation();
 
     const isActive = (path: string) => location.pathname === path;
+
+    // Lock body scroll when mobile menu is open
+    useEffect(() => {
+        if (isOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = '';
+        }
+        return () => {
+            document.body.style.overflow = '';
+        };
+    }, [isOpen]);
 
     const links = [
         { path: '/', label: 'Home' },
@@ -30,9 +42,6 @@ export function Navbar() {
                         <Link to="/" className="flex items-center gap-3 group">
                             <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-primary-light flex items-center justify-center shadow-frost group-hover:shadow-neural transition-shadow duration-300">
                                 <span className="text-white font-bold text-lg">N</span>
-                                <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3">
-                                    <NeuralKnot size="sm" state="idle" className="scale-[0.25] origin-center" />
-                                </div>
                             </div>
                             <span className="font-heading font-bold text-xl text-text">
                                 <span className="text-primary">Nex</span>Prep
@@ -98,40 +107,58 @@ export function Navbar() {
                     </div>
                 </div>
 
-                {/* Mobile Menu Drawer */}
-                <div className={`lg:hidden fixed inset-0 top-[72px] transition-all duration-300 ${isOpen ? 'visible' : 'invisible'}`} style={{ zIndex: 'var(--z-modal-backdrop)' }}>
+                {/* Mobile Menu - Fullscreen Overlay */}
+                {isOpen && (
                     <div
-                        className={`absolute inset-0 bg-black/20 backdrop-blur-sm transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0'}`}
-                        onClick={() => setIsOpen(false)}
-                    />
-                    <div className={`absolute right-0 top-0 bottom-0 w-72 bg-white/95 backdrop-blur-xl shadow-frost-lg transform transition-transform duration-300 ease-spring ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}>
-                        <ul className="p-4 space-y-1">
-                            {links.map((link) => (
-                                <li key={link.path}>
-                                    <Link
-                                        to={link.path}
-                                        className={`block px-4 py-3 rounded-xl text-base font-medium transition-all duration-200
-                                            ${isActive(link.path)
-                                                ? 'text-primary bg-primary/5'
-                                                : 'text-text hover:bg-slate-50'
-                                            }`}
-                                        onClick={() => setIsOpen(false)}
-                                    >
-                                        {link.label}
-                                    </Link>
-                                </li>
-                            ))}
-                            <li className="pt-4 border-t border-slate-100">
+                        className="lg:hidden fixed inset-0 z-[9999]"
+                        style={{ top: '72px' }}
+                    >
+                        {/* Backdrop */}
+                        <div
+                            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+                            onClick={() => setIsOpen(false)}
+                            aria-hidden="true"
+                        />
+                        {/* Menu Panel - Full Width on Mobile */}
+                        <div
+                            className="absolute inset-x-0 top-0 bg-white shadow-2xl max-h-[calc(100vh-72px)] overflow-y-auto"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <ul className="py-4">
+                                {links.map((link) => (
+                                    <li key={link.path}>
+                                        <Link
+                                            to={link.path}
+                                            className={`block px-6 py-4 text-lg font-medium transition-colors border-b border-slate-100
+                                                ${isActive(link.path)
+                                                    ? 'text-primary bg-primary/5'
+                                                    : 'text-text hover:bg-slate-50 active:bg-slate-100'
+                                                }`}
+                                            onClick={() => setIsOpen(false)}
+                                        >
+                                            {link.label}
+                                        </Link>
+                                    </li>
+                                ))}
+                            </ul>
+                            <div className="p-4 border-t border-slate-200 bg-slate-50">
                                 <button
-                                    className="w-full px-4 py-3 rounded-xl text-base font-medium text-text hover:bg-slate-50 text-left transition-colors"
+                                    className="w-full px-6 py-4 rounded-xl text-lg font-medium text-text bg-white border border-slate-200 hover:bg-slate-50 transition-colors"
                                     onClick={handleLogin}
                                 >
                                     Log In
                                 </button>
-                            </li>
-                        </ul>
+                                <Link
+                                    to="/choose-path"
+                                    className="block w-full mt-3 px-6 py-4 rounded-xl text-lg font-semibold text-white text-center bg-gradient-to-r from-primary to-primary-light shadow-frost"
+                                    onClick={() => setIsOpen(false)}
+                                >
+                                    Start Simulation →
+                                </Link>
+                            </div>
+                        </div>
                     </div>
-                </div>
+                )}
             </nav>
 
             {/* Login Modal */}
