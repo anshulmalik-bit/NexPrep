@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { api, type ATSAnalysis } from '../services/api';
+import { type ATSAnalysis } from '../services/api';
 
 // ============================================
 // TYPE DEFINITIONS
@@ -250,15 +250,7 @@ const initialState = {
 
     // ...
 
-    // ========================================
-    // RESUME ACTIONS
-    // ========================================
-    setResumeData: (resumeText, resumeKeywords, atsAnalysis) => set({
-        resumeText: resumeText || null,
-        resumeKeywords: resumeKeywords || [],
-        resumeParseStatus: resumeText ? 'success' : 'none',
-        atsAnalysis: atsAnalysis || null,
-    }),
+
 
     // Permissions & Calibration
     permissions: initialPermissions,
@@ -317,10 +309,11 @@ export const useInterviewStore = create<InterviewState>((set) => ({
     // ========================================
     // RESUME ACTIONS
     // ========================================
-    setResumeData: (resumeText, resumeKeywords) => set({
+    setResumeData: (resumeText: string | undefined, resumeKeywords: string[] | undefined, atsAnalysis?: ATSAnalysis | null) => set({
         resumeText: resumeText || null,
         resumeKeywords: resumeKeywords || [],
         resumeParseStatus: resumeText ? 'success' : 'none',
+        atsAnalysis: atsAnalysis || null,
     }),
 
     setResume: (resumeText, resumeKeywords, resumeParseStatus) => set({
