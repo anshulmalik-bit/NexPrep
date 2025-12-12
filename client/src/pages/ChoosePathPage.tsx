@@ -101,30 +101,30 @@ export function ChoosePathPage() {
                     </div>
 
                     {/* Right: Role List */}
-                    <div className="lg:w-1/2">
+                    <div className="lg:w-1/2 pb-28 lg:pb-0">
                         <h3 className="text-lg font-semibold text-text mb-4">
                             {selectedTrack ? `Roles in ${selectedTrack.name}` : 'Select a track to see roles'}
                         </h3>
 
                         {selectedTrack ? (
-                            <div className="space-y-3 lg:max-h-[500px] max-h-[calc(100vh-400px)] overflow-y-auto pr-2 pb-24 lg:pb-2 scrollbar-hide">
+                            <div className="space-y-3 lg:max-h-[500px] lg:overflow-y-auto lg:pr-2 scrollbar-hide">
                                 {selectedTrack.roles.map((role) => (
                                     <button
                                         key={role.id}
                                         onClick={() => setSelectedRole(role)}
-                                        className={`w-full glass-card p-4 text-left transition-all duration-200
+                                        className={`w-full glass-card p-4 text-left transition-all duration-200 active:scale-[0.98]
                                             ${selectedRole?.id === role.id
                                                 ? 'ring-2 ring-accent shadow-frost-lg'
                                                 : 'hover:shadow-frost hover:-translate-x-1'
                                             }`}
                                     >
                                         <div className="flex items-center justify-between">
-                                            <div>
+                                            <div className="flex-1 min-w-0 pr-3">
                                                 <h5 className="font-medium text-text">{role.name}</h5>
                                                 <p className="text-sm text-text-secondary mt-0.5">{role.description}</p>
                                             </div>
                                             {selectedRole?.id === role.id && (
-                                                <div className="w-6 h-6 rounded-full bg-accent flex items-center justify-center text-white text-sm">
+                                                <div className="flex-shrink-0 w-6 h-6 rounded-full bg-accent flex items-center justify-center text-white text-sm">
                                                     ✓
                                                 </div>
                                             )}
