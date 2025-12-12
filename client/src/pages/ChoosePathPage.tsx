@@ -107,15 +107,15 @@ export function ChoosePathPage() {
                         </h3>
 
                         {selectedTrack ? (
-                            <div className="space-y-3 lg:max-h-[calc(100vh-400px)] lg:overflow-y-auto lg:pr-4 lg:pb-4 scrollbar-hide lg:scrollbar-default">
+                            <div className="space-y-3 lg:max-h-[calc(100vh-400px)] lg:overflow-y-auto lg:pr-4 lg:pb-4 lg:pl-1 lg:pt-1 scrollbar-hide lg:scrollbar-default">
                                 {selectedTrack.roles.map((role) => (
                                     <button
                                         key={role.id}
                                         onClick={() => setSelectedRole(role)}
                                         className={`w-full glass-card p-4 text-left transition-all duration-200 active:scale-[0.98]
                                             ${selectedRole?.id === role.id
-                                                ? 'ring-2 ring-accent shadow-frost-lg'
-                                                : 'hover:shadow-frost hover:-translate-x-1'
+                                                ? 'outline outline-2 outline-accent shadow-frost-lg bg-accent/5'
+                                                : 'hover:shadow-frost hover:-translate-y-1'
                                             }`}
                                     >
                                         <div className="flex items-center justify-between">
