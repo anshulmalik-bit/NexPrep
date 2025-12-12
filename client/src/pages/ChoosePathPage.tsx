@@ -107,7 +107,7 @@ export function ChoosePathPage() {
                         </h3>
 
                         {selectedTrack ? (
-                            <div className="space-y-3 lg:max-h-[500px] lg:overflow-y-auto lg:pr-2 scrollbar-hide">
+                            <div className="space-y-3 lg:max-h-[calc(100vh-350px)] lg:overflow-y-auto lg:pr-2 scrollbar-hide">
                                 {selectedTrack.roles.map((role) => (
                                     <button
                                         key={role.id}
