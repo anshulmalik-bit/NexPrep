@@ -18,7 +18,7 @@ const router = Router();
  */
 router.post('/content', async (req: Request, res: Response) => {
     const startTime = Date.now();
-    const startTime = Date.now();
+
 
     try {
         const {
@@ -36,110 +36,108 @@ router.post('/content', async (req: Request, res: Response) => {
         } = req.body;
 
         // Validate required fields
-    } = req.body;
 
-    // Validate required fields
 
-    if (!questionId || !questionText || !transcript || !role || !track || !quinnMode) {
-        console.log('[Judge/content] Validation FAILED - missing fields');
-        return res.status(400).json({
-            status: 'ERROR',
-            error: 'Missing required fields: questionId, questionText, transcript, role, track, quinnMode',
-            content_score: 0,
-            content_strength: '',
-            content_fix: '',
-            content_label: 'ERROR',
+        if (!questionId || !questionText || !transcript || !role || !track || !quinnMode) {
+            console.log('[Judge/content] Validation FAILED - missing fields');
+            return res.status(400).json({
+                status: 'ERROR',
+                error: 'Missing required fields: questionId, questionText, transcript, role, track, quinnMode',
+                content_score: 0,
+                content_strength: '',
+                content_fix: '',
+                content_label: 'ERROR',
+                key_evidence: null,
+                suggested_rewrite: null,
+                explainability: [],
+                resource_ids: [],
+                latency_ms: Date.now() - startTime
+            });
+        }
+
+        // Validate quinnMode
+        if (quinnMode !== 'SUPPORTIVE' && quinnMode !== 'DIRECT') {
+            return res.status(400).json({
+                status: 'ERROR',
+                error: 'quinnMode must be SUPPORTIVE or DIRECT',
+                content_score: 0,
+                content_strength: '',
+                content_fix: '',
+                content_label: 'ERROR',
+                key_evidence: null,
+                suggested_rewrite: null,
+                explainability: [],
+                resource_ids: [],
+                latency_ms: Date.now() - startTime
+            });
+        }
+
+        // Use the new quickJudgeAnswer for fast feedback
+        const quickInput: QuickJudgeInput = {
+            question: questionText,
+            answer: transcript,
+            role,
+            quinnMode,
+        };
+
+
+        let quickResult;
+        try {
+            quickResult = await quickJudgeAnswer(quickInput);
+
+        } catch (quickError) {
+            console.error('[Judge/content] quickJudgeAnswer error:', quickError);
+            // Return fallback response
+            return res.json({
+                status: 'OK',
+                content_score: 40,
+                content_strength: 'Answer recorded.',
+                content_fix: 'Try adding more detail and specific examples.',
+                content_label: 'FALLBACK',
+                key_evidence: null,
+                suggested_rewrite: null,
+                explainability: [],
+                resource_ids: [],
+                latency_ms: Date.now() - startTime
+            });
+        }
+
+        // Map to ContentJudgeOutput format for backward compatibility
+        const result: ContentJudgeOutput = {
+            status: 'OK',
+            content_score: quickResult.score,
+            content_strength: quickResult.strength,
+            content_fix: quickResult.fix,
+            content_label: quickResult.label,
             key_evidence: null,
             suggested_rewrite: null,
             explainability: [],
             resource_ids: [],
             latency_ms: Date.now() - startTime
-        });
-    }
+        };
 
-    // Validate quinnMode
-    if (quinnMode !== 'SUPPORTIVE' && quinnMode !== 'DIRECT') {
-        return res.status(400).json({
-            status: 'ERROR',
-            error: 'quinnMode must be SUPPORTIVE or DIRECT',
-            content_score: 0,
-            content_strength: '',
-            content_fix: '',
-            content_label: 'ERROR',
-            key_evidence: null,
-            suggested_rewrite: null,
-            explainability: [],
-            resource_ids: [],
-            latency_ms: Date.now() - startTime
-        });
-    }
+        // Log for monitoring (no PII)
+        console.log(`[Judge] questionId=${questionId} score=${result.content_score} label=${result.content_label} latency=${result.latency_ms}ms status=${result.status}`);
 
-    // Use the new quickJudgeAnswer for fast feedback
-    const quickInput: QuickJudgeInput = {
-        question: questionText,
-        answer: transcript,
-        role,
-        quinnMode,
-    };
-
-};
-let quickResult;
-try {
-    quickResult = await quickJudgeAnswer(quickInput);
-    quickResult = await quickJudgeAnswer(quickInput);
-} catch (quickError) {
-    console.error('[Judge/content] quickJudgeAnswer error:', quickError);
-    // Return fallback response
-    return res.json({
-        status: 'OK',
-        content_score: 40,
-        content_strength: 'Answer recorded.',
-        content_fix: 'Try adding more detail and specific examples.',
-        content_label: 'FALLBACK',
-        key_evidence: null,
-        suggested_rewrite: null,
-        explainability: [],
-        resource_ids: [],
-        latency_ms: Date.now() - startTime
-    });
-}
-
-// Map to ContentJudgeOutput format for backward compatibility
-const result: ContentJudgeOutput = {
-    status: 'OK',
-    content_score: quickResult.score,
-    content_strength: quickResult.strength,
-    content_fix: quickResult.fix,
-    content_label: quickResult.label,
-    key_evidence: null,
-    suggested_rewrite: null,
-    explainability: [],
-    resource_ids: [],
-    latency_ms: Date.now() - startTime
-};
-
-// Log for monitoring (no PII)
-console.log(`[Judge] questionId=${questionId} score=${result.content_score} label=${result.content_label} latency=${result.latency_ms}ms status=${result.status}`);
-
-// Return result
-return res.json(result);
+        // Return result
+        return res.json(result);
 
     } catch (error) {
-    console.error('[Judge] Unexpected error:', error);
-    return res.status(500).json({
-        status: 'ERROR',
-        error: 'Internal server error',
-        content_score: 0,
-        content_strength: '',
-        content_fix: 'Unable to evaluate at this time',
-        content_label: 'ERROR',
-        key_evidence: null,
-        suggested_rewrite: null,
-        explainability: [],
-        resource_ids: [],
-        latency_ms: Date.now() - startTime
-    });
-}
+        console.error('[Judge] Unexpected error:', error);
+        return res.status(500).json({
+            status: 'ERROR',
+            error: 'Internal server error',
+            content_score: 0,
+            content_strength: '',
+            content_fix: 'Unable to evaluate at this time',
+            content_label: 'ERROR',
+            key_evidence: null,
+            suggested_rewrite: null,
+            explainability: [],
+            resource_ids: [],
+            latency_ms: Date.now() - startTime
+        });
+    }
 });
 
 /**
