@@ -419,9 +419,9 @@ export function CalibrationPage() {
 
                     {/* Quinn Status */}
                     <div className="mt-8 bg-white rounded-2xl shadow-frost border border-slate-100 p-6 flex items-center gap-6">
-                        <div className="w-16 h-16 flex-shrink-0">
+                        <div className="flex-shrink-0">
                             <NeuralKnot
-                                size="md"
+                                size="sm"
                                 state={isReady ? 'coaching' : hasErrors ? 'idle' : 'thinking'}
                             />
                         </div>
@@ -529,8 +529,8 @@ export function CalibrationPage() {
                         onClick={e => e.stopPropagation()}
                     >
                         <div className="text-center mb-6">
-                            <div className="w-16 h-16 mx-auto mb-4">
-                                <NeuralKnot size="md" state="speaking" />
+                            <div className="mx-auto mb-4">
+                                <NeuralKnot size="sm" state="speaking" />
                             </div>
                             <h2 className="text-xl font-bold text-text">Privacy Notice</h2>
                         </div>

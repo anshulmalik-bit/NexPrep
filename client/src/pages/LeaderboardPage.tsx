@@ -53,9 +53,7 @@ export function LeaderboardPage() {
     if (loading) {
         return (
             <div className="min-h-screen bg-canvas flex items-center justify-center pt-[72px]">
-                <div className="w-16 h-16">
-                    <NeuralKnot size="md" state="thinking" />
-                </div>
+                <NeuralKnot size="md" state="thinking" />
             </div>
         );
     }
@@ -187,7 +185,7 @@ export function LeaderboardPage() {
                 {filteredEntries.length > 0 && (
                     <div className="mt-8 max-w-xl mx-auto">
                         <div className="glass-card p-4 flex items-start gap-4">
-                            <div className="w-10 h-10 flex-shrink-0">
+                            <div className="flex-shrink-0">
                                 <NeuralKnot size="sm" state="coaching" />
                             </div>
                             <div>

@@ -180,8 +180,8 @@ export function Navbar() {
                         </button>
 
                         <div className="text-center mb-6">
-                            <div className="w-16 h-16 mx-auto mb-4">
-                                <NeuralKnot size="md" state="coaching" />
+                            <div className="mx-auto mb-4">
+                                <NeuralKnot size="sm" state="coaching" />
                             </div>
                             <h2 className="text-2xl font-bold text-text">Welcome Back!</h2>
                             <p className="text-text-secondary mt-1">Sign in to track your progress</p>

@@ -179,7 +179,7 @@ export function InterviewSetupPage() {
                             {/* Quinn Insight */}
                             {companyName && (
                                 <div className="mt-4 flex items-start gap-3 p-4 bg-primary/5 rounded-xl border border-primary/10">
-                                    <div className="w-8 h-8 flex-shrink-0">
+                                    <div className="flex-shrink-0">
                                         <NeuralKnot size="sm" state="coaching" />
                                     </div>
                                     <div>
@@ -246,7 +246,7 @@ export function InterviewSetupPage() {
                             {/* Quinn's First Impression */}
                             {resumeFile && (
                                 <div className="mt-4 flex items-start gap-3 p-4 bg-accent/5 rounded-xl border border-accent/10">
-                                    <div className="w-8 h-8 flex-shrink-0">
+                                    <div className="flex-shrink-0">
                                         <NeuralKnot size="sm" state="speaking" />
                                     </div>
                                     <div>
