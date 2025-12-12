@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Navbar } from './components/Navbar';
+import { ScrollToTop } from './components/ScrollToTop';
 import { HomePage } from './pages/HomePage';
 import { ChoosePathPage } from './pages/ChoosePathPage';
 import { TracksPage } from './pages/TracksPage';
@@ -18,6 +19,7 @@ import { MainLayout } from './components/MainLayout';
 function App() {
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <Navbar />
       <Routes>
         <Route element={<MainLayout />}>
