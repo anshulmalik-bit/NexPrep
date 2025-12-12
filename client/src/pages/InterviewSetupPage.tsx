@@ -316,5 +316,6 @@ export function InterviewSetupPage() {
                     <div className="h-32"></div>
                 </div>
             </div>
-            );
+        </div>
+    );
 }
