@@ -34,8 +34,19 @@ Output JSON:
         try {
             const provider = LLMFactory.getProvider();
             console.log('[Briefing] Calling LLM provider:', provider.getProviderName());
-            const result = await provider.generateJson(prompt, { temperature: 0.6 });
+            const raw = await provider.generateJson<any>(prompt, { temperature: 0.6 });
             console.log('[Briefing] AI response received successfully');
+
+            // Validate and sanitize types to prevent frontend crashes
+            const result = {
+                overview: String(raw.overview || 'Info unavailable'),
+                marketPosition: String(raw.marketPosition || 'Info unavailable'),
+                recentNews: String(raw.recentNews || 'Info unavailable'),
+                culture: String(raw.culture || 'Info unavailable'),
+                roleExpectations: String(raw.roleExpectations || 'Info unavailable'),
+                quinnPerspective: String(raw.quinnPerspective || 'I am ready to help.')
+            };
+
             return res.json(result);
         } catch (error) {
             console.error('[Briefing] AI failed, using fallback:', error);
