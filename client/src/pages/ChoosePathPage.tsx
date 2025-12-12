@@ -134,8 +134,8 @@ export function ChoosePathPage() {
                             </div>
                         ) : (
                             <div className="glass-card p-12 text-center">
-                                <div className="w-16 h-16 mx-auto mb-4 opacity-50">
-                                    <NeuralKnot size="md" state="idle" />
+                                <div className="mx-auto mb-4 opacity-50">
+                                    <NeuralKnot size="sm" state="idle" />
                                 </div>
                                 <p className="text-text-secondary">
                                     Choose a career track to see available roles

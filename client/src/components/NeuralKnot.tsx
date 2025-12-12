@@ -24,11 +24,11 @@ export const NeuralKnot: FC<NeuralKnotProps> = ({
     className = '',
 }) => {
     return (
-        <div className={`relative rounded-full flex items-center justify-center overflow-hidden border-2 border-indigo-100 shadow-frost bg-indigo-50/50 ${sizeMap[size]} ${className}`}>
+        <div className={`relative rounded-full flex items-center justify-center ${sizeMap[size]} ${className}`}>
             <img
                 src="/quinn-knot.png"
                 alt="Quinn AI"
-                className={`w-[90%] h-[90%] object-contain transition-all duration-500
+                className={`w-full h-full object-contain transition-all duration-500
                     ${state === 'speaking' ? 'scale-110 brightness-110' : 'scale-100'}
                 `}
             />

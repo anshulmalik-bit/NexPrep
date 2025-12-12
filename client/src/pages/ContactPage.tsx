@@ -30,8 +30,8 @@ export function ContactPage() {
                 <div className="max-w-lg mx-auto">
                     {submitted ? (
                         <div className="glass-card-strong p-8 lg:p-12 text-center">
-                            <div className="w-16 h-16 mx-auto mb-6">
-                                <NeuralKnot size="md" state="celebrating" />
+                            <div className="mx-auto mb-6">
+                                <NeuralKnot size="sm" state="celebrating" />
                             </div>
                             <h2 className="text-2xl font-bold text-text mb-3">Message Sent!</h2>
                             <p className="text-text-secondary mb-8">

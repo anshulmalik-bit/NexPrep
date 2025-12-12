@@ -118,7 +118,7 @@ export function EvaluationPage() {
         return (
             <div className="min-h-screen bg-canvas flex items-center justify-center pt-[72px]">
                 <div className="text-center">
-                    <div className="w-24 h-24 mx-auto mb-6">
+                    <div className="mx-auto mb-6">
                         <NeuralKnot size="lg" state="thinking" />
                     </div>
                     <p className="text-lg text-text-secondary">
@@ -385,8 +385,8 @@ function SlideContent({
         case 'score':
             return (
                 <div className="text-center py-12">
-                    <div className="w-32 h-32 mx-auto mb-6">
-                        <NeuralKnot size="xl" state="coaching" />
+                    <div className="mx-auto mb-6">
+                        <NeuralKnot size="lg" state="coaching" />
                     </div>
                     <div className="glass-card-strong w-36 h-36 rounded-full flex flex-col items-center justify-center mx-auto shadow-neural mb-6">
                         <span className="text-5xl font-bold text-gradient">{avgScore}</span>
