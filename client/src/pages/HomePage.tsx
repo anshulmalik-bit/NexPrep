@@ -42,10 +42,7 @@ export function HomePage() {
                         {/* Right: Quinn Illustration */}
                         <div className="flex-1 flex justify-center lg:justify-end">
                             {/* Neural Knot - directly rendered */}
-                            <div className="relative">
-                                {/* Ground Shadow */}
-                                <div className="absolute bottom-8 left-1/2 -translate-x-1/2 w-3/4 h-12 bg-indigo-500/20 blur-3xl rounded-full pointer-events-none" />
-
+                            <div className="relative drop-shadow-2xl">
                                 <NeuralKnot state="intro" />
                                 {/* Hi Bubble - Hidden on mobile, visible on tablet+ */}
                                 <div className="hidden sm:block absolute -top-4 -right-2 md:-top-6 md:-right-6 bg-white px-4 py-2 md:px-6 md:py-3 rounded-2xl shadow-xl z-10 animate-bounce-slow">
