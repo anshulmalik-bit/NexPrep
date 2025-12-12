@@ -4,8 +4,6 @@ import { useInterviewStore } from '../store/interview-store';
 import { popularCompanies } from '../data/tracks';
 import { NeuralKnot } from '../components/NeuralKnot';
 
-type AnswerMode = 'text' | 'audio' | 'video';
-
 export function InterviewSetupPage() {
     const navigate = useNavigate();
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -23,7 +21,6 @@ export function InterviewSetupPage() {
     const [activeTab, setActiveTab] = useState<'overview' | 'news' | 'culture'>('overview');
     const [resumeFile, setResumeFile] = useState<File | null>(null);
     const [resumeText, setResumeText] = useState('');
-    const [answerMode, setAnswerMode] = useState<AnswerMode>('text');
     const [quinnTone, setQuinnTone] = useState<'SUPPORTIVE' | 'DIRECT'>('SUPPORTIVE');
     const [isUploading, setIsUploading] = useState(false);
 
@@ -50,12 +47,8 @@ export function InterviewSetupPage() {
         setResumeData(resumeText || undefined, undefined);
         setQuinnMode(quinnTone);
 
-        // Navigate to calibration or interview based on mode
-        if (answerMode === 'video' || answerMode === 'audio') {
-            navigate('/calibration');
-        } else {
-            navigate('/interview');
-        }
+        // Navigate directly to interview (text mode is default)
+        navigate('/interview');
     };
 
     const canProceed = trackId && roleId;
@@ -259,126 +252,69 @@ export function InterviewSetupPage() {
                             )}
                         </div>
                     </div>
-                </div>
 
-                {/* Answer Mode Selection */}
-                <div className="max-w-6xl mx-auto mt-8">
-                    <div className="glass-card p-6">
-                        <h3 className="text-lg font-semibold text-text mb-6 text-center">
-                            Choose Your Answer Mode
-                        </h3>
+                    {/* Quinn Tone Selection */}
+                    <div className="max-w-6xl mx-auto mt-8">
+                        <div className="glass-card p-6">
+                            <h3 className="text-lg font-semibold text-text mb-6 text-center">
+                                Quinn's Coaching Style
+                            </h3>
 
-                        <div className="grid sm:grid-cols-3 gap-4">
-                            {/* Text Mode */}
-                            <button
-                                onClick={() => setAnswerMode('text')}
-                                className={`p-6 rounded-xl border-2 transition-all duration-300 text-left active:scale-[0.98]
-                                    ${answerMode === 'text'
-                                        ? 'border-primary bg-primary/5 shadow-frost'
-                                        : 'border-slate-200 hover:border-primary/30'
-                                    }`}
-                            >
-                                <div className="text-3xl mb-3" aria-hidden="true">📝</div>
-                                <h4 className="font-semibold text-text mb-1">Text</h4>
-                                <p className="text-sm text-text-secondary">Type your answers</p>
-                            </button>
-
-                            {/* Audio Mode */}
-                            <button
-                                onClick={() => setAnswerMode('audio')}
-                                className={`p-6 rounded-xl border-2 transition-all duration-300 text-left
-                                    ${answerMode === 'audio'
-                                        ? 'border-primary bg-primary/5 shadow-frost'
-                                        : 'border-slate-200 hover:border-primary/30'
-                                    }`}
-                            >
-                                <div className="text-3xl mb-3">🎤</div>
-                                <h4 className="font-semibold text-text mb-1">Audio</h4>
-                                <p className="text-sm text-text-secondary">Speak your answers</p>
-                            </button>
-
-                            {/* Video Mode */}
-                            <button
-                                onClick={() => setAnswerMode('video')}
-                                className={`p-6 rounded-xl border-2 transition-all duration-300 text-left relative
-                                    ${answerMode === 'video'
-                                        ? 'border-accent bg-accent/5 shadow-frost'
-                                        : 'border-slate-200 hover:border-accent/30'
-                                    }`}
-                            >
-                                <div className="absolute top-2 right-2 px-2 py-0.5 bg-accent text-white text-xs font-medium rounded-full">
-                                    Full Analysis
-                                </div>
-                                <div className="text-3xl mb-3">🎥</div>
-                                <h4 className="font-semibold text-text mb-1">Audio + Video</h4>
-                                <p className="text-sm text-text-secondary">Complete behavioral analysis</p>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Quinn Tone Selection */}
-                <div className="max-w-6xl mx-auto mt-8">
-                    <div className="glass-card p-6">
-                        <h3 className="text-lg font-semibold text-text mb-6 text-center">
-                            Quinn's Coaching Style
-                        </h3>
-
-                        <div className="grid sm:grid-cols-2 gap-4 max-w-2xl mx-auto">
-                            <button
-                                onClick={() => setQuinnTone('SUPPORTIVE')}
-                                className={`p-6 rounded-xl border-2 transition-all duration-300
+                            <div className="grid sm:grid-cols-2 gap-4 max-w-2xl mx-auto">
+                                <button
+                                    onClick={() => setQuinnTone('SUPPORTIVE')}
+                                    className={`p-6 rounded-xl border-2 transition-all duration-300
                                     ${quinnTone === 'SUPPORTIVE'
-                                        ? 'border-primary bg-primary/5 shadow-frost'
-                                        : 'border-slate-200 hover:border-primary/30'
-                                    }`}
-                            >
-                                <div className="text-3xl mb-3">🤗</div>
-                                <h4 className="font-semibold text-text mb-1">Supportive</h4>
-                                <p className="text-sm text-text-secondary">Warm, encouraging feedback</p>
-                            </button>
+                                            ? 'border-primary bg-primary/5 shadow-frost'
+                                            : 'border-slate-200 hover:border-primary/30'
+                                        }`}
+                                >
+                                    <div className="text-3xl mb-3">🤗</div>
+                                    <h4 className="font-semibold text-text mb-1">Supportive</h4>
+                                    <p className="text-sm text-text-secondary">Warm, encouraging feedback</p>
+                                </button>
 
-                            <button
-                                onClick={() => setQuinnTone('DIRECT')}
-                                className={`p-6 rounded-xl border-2 transition-all duration-300
+                                <button
+                                    onClick={() => setQuinnTone('DIRECT')}
+                                    className={`p-6 rounded-xl border-2 transition-all duration-300
                                     ${quinnTone === 'DIRECT'
-                                        ? 'border-primary bg-primary/5 shadow-frost'
-                                        : 'border-slate-200 hover:border-primary/30'
-                                    }`}
-                            >
-                                <div className="text-3xl mb-3">🎯</div>
-                                <h4 className="font-semibold text-text mb-1">Direct</h4>
-                                <p className="text-sm text-text-secondary">Concise, no-nonsense approach</p>
-                            </button>
+                                            ? 'border-primary bg-primary/5 shadow-frost'
+                                            : 'border-slate-200 hover:border-primary/30'
+                                        }`}
+                                >
+                                    <div className="text-3xl mb-3">🎯</div>
+                                    <h4 className="font-semibold text-text mb-1">Direct</h4>
+                                    <p className="text-sm text-text-secondary">Concise, no-nonsense approach</p>
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                {/* Start Button - Fixed at bottom */}
-                <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/95 backdrop-blur-xl border-t border-slate-100 shadow-frost-lg z-40">
-                    <div className="max-w-md mx-auto">
-                        <button
-                            onClick={handleStartSimulation}
-                            disabled={!canProceed}
-                            className={`w-full py-4 rounded-xl font-semibold text-lg transition-all duration-300
+                    {/* Start Button - Fixed at bottom */}
+                    <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/95 backdrop-blur-xl border-t border-slate-100 shadow-frost-lg z-40">
+                        <div className="max-w-md mx-auto">
+                            <button
+                                onClick={handleStartSimulation}
+                                disabled={!canProceed}
+                                className={`w-full py-4 rounded-xl font-semibold text-lg transition-all duration-300
                                 ${canProceed
-                                    ? 'btn-cta'
-                                    : 'bg-slate-100 text-text-muted cursor-not-allowed'
-                                }`}
-                        >
-                            Start Simulation →
-                        </button>
-                        {!canProceed && (
-                            <p className="text-center text-sm text-text-muted mt-2">
-                                {!trackId ? 'Please select a track first' : 'Please select a role first'}
-                            </p>
-                        )}
+                                        ? 'btn-cta'
+                                        : 'bg-slate-100 text-text-muted cursor-not-allowed'
+                                    }`}
+                            >
+                                Start Simulation →
+                            </button>
+                            {!canProceed && (
+                                <p className="text-center text-sm text-text-muted mt-2">
+                                    {!trackId ? 'Please select a track first' : 'Please select a role first'}
+                                </p>
+                            )}
+                        </div>
                     </div>
-                </div>
 
-                {/* Bottom padding to account for fixed button */}
-                <div className="h-32"></div>
+                    {/* Bottom padding to account for fixed button */}
+                    <div className="h-32"></div>
+                </div>
             </div>
-        </div>
-    );
+            );
 }
