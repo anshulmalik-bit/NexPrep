@@ -490,31 +490,36 @@ export function CalibrationPage() {
                         </div>
                     )}
 
-                    {/* Continue Button */}
-                    <div className="mt-8 text-center space-y-4">
-                        <button
-                            onClick={handleContinue}
-                            disabled={!isReady && !hasErrors}
-                            className={`px-12 py-4 rounded-xl font-semibold text-lg transition-all duration-300
-                                ${isReady
-                                    ? 'bg-gradient-to-r from-primary to-accent text-white shadow-neural hover:shadow-lg transform hover:scale-[1.02]'
-                                    : hasErrors
-                                        ? 'bg-primary text-white hover:bg-primary-dark'
-                                        : 'bg-slate-100 text-text-muted cursor-not-allowed'
-                                }`}
-                        >
-                            {isReady ? 'Start Interview →' : hasErrors ? 'Continue Anyway →' : 'Testing...'}
-                        </button>
+                    {/* Bottom padding to account for fixed button */}
+                    <div className="h-32"></div>
+                </div>
+            </div>
 
-                        {(hasErrors || (!isReady && micStatus !== 'idle' && cameraStatus !== 'idle')) && (
-                            <button
-                                onClick={handleSkipToTextMode}
-                                className="block mx-auto text-sm text-text-secondary hover:text-text transition-colors"
-                            >
-                                Skip and use text-only mode
-                            </button>
-                        )}
-                    </div>
+            {/* Continue Button - Fixed at bottom */}
+            <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/95 backdrop-blur-xl border-t border-slate-100 shadow-frost-lg z-40">
+                <div className="max-w-md mx-auto text-center space-y-3">
+                    <button
+                        onClick={handleContinue}
+                        disabled={!isReady && !hasErrors}
+                        className={`w-full py-4 rounded-xl font-semibold text-lg transition-all duration-300
+                            ${isReady
+                                ? 'bg-gradient-to-r from-primary to-accent text-white shadow-neural hover:shadow-lg transform hover:scale-[1.02]'
+                                : hasErrors
+                                    ? 'bg-primary text-white hover:bg-primary-dark'
+                                    : 'bg-slate-100 text-text-muted cursor-not-allowed'
+                            }`}
+                    >
+                        {isReady ? 'Start Interview →' : hasErrors ? 'Continue Anyway →' : 'Testing...'}
+                    </button>
+
+                    {(hasErrors || (!isReady && micStatus !== 'idle' && cameraStatus !== 'idle')) && (
+                        <button
+                            onClick={handleSkipToTextMode}
+                            className="text-sm text-text-secondary hover:text-text transition-colors"
+                        >
+                            Skip and use text-only mode
+                        </button>
+                    )}
                 </div>
             </div>
 

@@ -354,25 +354,30 @@ export function InterviewSetupPage() {
                     </div>
                 </div>
 
-                {/* Start Button */}
-                <div className="max-w-md mx-auto mt-12">
-                    <button
-                        onClick={handleStartSimulation}
-                        disabled={!canProceed}
-                        className={`w-full py-4 rounded-xl font-semibold text-lg transition-all duration-300
-                            ${canProceed
-                                ? 'btn-cta'
-                                : 'bg-slate-100 text-text-muted cursor-not-allowed'
-                            }`}
-                    >
-                        Start Simulation →
-                    </button>
-                    {!canProceed && (
-                        <p className="text-center text-sm text-text-muted mt-3">
-                            {!trackId ? 'Please select a track first' : 'Please select a role first'}
-                        </p>
-                    )}
+                {/* Start Button - Fixed at bottom */}
+                <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/95 backdrop-blur-xl border-t border-slate-100 shadow-frost-lg z-40">
+                    <div className="max-w-md mx-auto">
+                        <button
+                            onClick={handleStartSimulation}
+                            disabled={!canProceed}
+                            className={`w-full py-4 rounded-xl font-semibold text-lg transition-all duration-300
+                                ${canProceed
+                                    ? 'btn-cta'
+                                    : 'bg-slate-100 text-text-muted cursor-not-allowed'
+                                }`}
+                        >
+                            Start Simulation →
+                        </button>
+                        {!canProceed && (
+                            <p className="text-center text-sm text-text-muted mt-2">
+                                {!trackId ? 'Please select a track first' : 'Please select a role first'}
+                            </p>
+                        )}
+                    </div>
                 </div>
+
+                {/* Bottom padding to account for fixed button */}
+                <div className="h-32"></div>
             </div>
         </div>
     );
