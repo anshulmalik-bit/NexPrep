@@ -183,7 +183,6 @@ export function ChoosePathPage() {
                 </div>
             </div>
         </div>
-    </div >
-</div >
+
     );
 }
