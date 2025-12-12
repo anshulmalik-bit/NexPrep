@@ -423,9 +423,7 @@ export function InterviewPage() {
                 </div>
                 <div className="container py-3 flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <div className="w-8 h-8">
-                            <NeuralKnot size="sm" state={isTyping ? 'thinking' : 'idle'} />
-                        </div>
+                        <NeuralKnot size="sm" state={isTyping ? 'thinking' : 'idle'} />
                         <span className="text-sm font-medium text-text">
                             Quinn ({quinnMode === 'SUPPORTIVE' ? 'Supportive' : 'Direct'})
                         </span>
@@ -453,7 +451,7 @@ export function InterviewPage() {
                             {messages.map((msg) => (
                                 <div key={msg.id} className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}>
                                     {msg.type === 'quinn' && (
-                                        <div className="w-8 h-8 mr-3 flex-shrink-0">
+                                        <div className="mr-3 flex-shrink-0">
                                             <NeuralKnot size="sm" state="speaking" />
                                         </div>
                                     )}
@@ -473,7 +471,7 @@ export function InterviewPage() {
 
                             {isTyping && (
                                 <div className="flex justify-start">
-                                    <div className="w-8 h-8 mr-3">
+                                    <div className="mr-3">
                                         <NeuralKnot size="sm" state="thinking" />
                                     </div>
                                     <div className="bg-white rounded-2xl rounded-tl-sm px-4 py-3 shadow-frost border border-slate-100">
@@ -489,7 +487,7 @@ export function InterviewPage() {
                             {/* Hint Suggestion */}
                             {showHintSuggestion && !isTyping && (
                                 <div className="flex justify-start">
-                                    <div className="w-8 h-8 mr-3">
+                                    <div className="mr-3">
                                         <NeuralKnot size="sm" state="coaching" />
                                     </div>
                                     <button
