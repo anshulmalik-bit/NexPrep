@@ -43,8 +43,8 @@ export function HomePage() {
                         <div className="flex-1 flex justify-center lg:justify-end">
                             {/* Neural Knot - directly rendered */}
                             <div className="relative">
-                                {/* Ground Shadow - Simplified and Darker */}
-                                <div className="absolute bottom-12 left-1/2 -translate-x-1/2 w-[240px] h-[24px] bg-black/50 blur-xl rounded-[100%] -z-10" />
+                                {/* Ground Shadow - Standard Stacking */}
+                                <div className="absolute bottom-12 left-1/2 -translate-x-1/2 w-[240px] h-[24px] bg-black/40 blur-xl rounded-[100%]" />
 
                                 <NeuralKnot state="intro" />
                                 {/* Hi Bubble - Hidden on mobile, visible on tablet+ */}
