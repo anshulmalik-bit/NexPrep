@@ -4,6 +4,7 @@ import { useInterviewStore } from '../store/interview-store';
 import { popularCompanies } from '../data/tracks';
 import { NeuralKnot } from '../components/NeuralKnot';
 import { api } from '../services/api';
+import { motion } from 'framer-motion';
 import type { ATSAnalysis } from '../services/api';
 
 interface BriefingData {
@@ -304,9 +305,30 @@ export function InterviewSetupPage() {
                                     />
 
                                     {isUploading ? (
-                                        <div className="flex flex-col items-center">
-                                            <div className="loading-spinner mb-4" />
-                                            <p className="text-text-secondary">Processing resume...</p>
+                                        <div className="flex flex-col items-center relative py-4">
+                                            {/* Scanning Beam Effect */}
+                                            <div className="absolute inset-x-0 top-0 bottom-0 overflow-hidden rounded-xl pointer-events-none">
+                                                <motion.div
+                                                    className="w-full h-[2px] bg-gradient-to-r from-transparent via-primary to-transparent shadow-[0_0_15px_rgba(99,102,241,0.5)]"
+                                                    animate={{ top: ['0%', '100%'] }}
+                                                    transition={{
+                                                        duration: 1.5,
+                                                        repeat: Infinity,
+                                                        ease: "linear"
+                                                    }}
+                                                    style={{ position: 'absolute' }}
+                                                />
+                                            </div>
+
+                                            <motion.div
+                                                animate={{ scale: [1, 1.1, 1] }}
+                                                transition={{ duration: 1.5, repeat: Infinity }}
+                                                className="text-4xl mb-4"
+                                            >
+                                                📄
+                                            </motion.div>
+                                            <p className="text-primary font-semibold animate-pulse">Analyzing Resume...</p>
+                                            <p className="text-xs text-text-secondary mt-1">Extracting keywords & skills</p>
                                         </div>
                                     ) : resumeFile ? (
                                         <div className="flex flex-col items-center">

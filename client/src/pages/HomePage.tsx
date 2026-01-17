@@ -1,25 +1,63 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useRef } from 'react';
 import NeuralKnot from '../components/studio/NeuralKnot';
-
+import { MagneticButton } from '../components/MagneticButton';
+import { motion, useSpring, useMotionValue, useTransform } from 'framer-motion';
 
 export function HomePage() {
+    const navigate = useNavigate();
+    const containerRef = useRef<HTMLDivElement>(null);
+
+    // Parallax Logic
+    const mouseX = useMotionValue(0);
+    const mouseY = useMotionValue(0);
+
+    // Smooth spring animation for parallax
+    const springX = useSpring(mouseX, { stiffness: 40, damping: 25 });
+    const springY = useSpring(mouseY, { stiffness: 40, damping: 25 });
+
+    const handleMouseMove = (e: React.MouseEvent) => {
+        const { clientX, clientY } = e;
+        const { innerWidth, innerHeight } = window;
+        // Normalize -0.5 to 0.5
+        mouseX.set((clientX / innerWidth) - 0.5);
+        mouseY.set((clientY / innerHeight) - 0.5);
+    };
+
+    // Transformations
+    const bgX = useTransform(springX, [-0.5, 0.5], [30, -30]);
+    const bgY = useTransform(springY, [-0.5, 0.5], [30, -30]);
+    const knotX = useTransform(springX, [-0.5, 0.5], [-20, 20]); // Inverse movement for depth
+    const knotY = useTransform(springY, [-0.5, 0.5], [-20, 20]);
+
+
+
     return (
-        <div className="min-h-screen bg-canvas pt-[var(--header-height)]">
+        <div
+            ref={containerRef}
+            className="min-h-screen pt-[var(--header-height)]"
+            onMouseMove={handleMouseMove}
+        >
             {/* Hero Section */}
             <section className="relative overflow-hidden">
-                {/* Background Grid */}
-                <div className="absolute inset-0 bg-gradient-to-b from-canvas via-slate-50/50 to-canvas" />
-                <div
-                    className="absolute inset-0 opacity-[0.03]"
-                    style={{
-                        backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%236366f1' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
-                    }}
-                />
+                {/* Parallax Background Grid */}
+                <motion.div
+                    style={{ x: bgX, y: bgY }}
+                    className="absolute inset-0 pointer-events-none"
+                >
+                    <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/30 to-transparent" />
+                    <div
+                        className="absolute inset-0 opacity-[0.03]"
+                        style={{
+                            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%236366f1' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
+                        }}
+                    />
+                </motion.div>
 
                 <div className="container relative">
                     <div className="flex flex-col lg:flex-row items-center justify-between gap-8 py-8 lg:py-16">
                         {/* Left: Content */}
-                        <div className="flex-1 text-center lg:text-left max-w-2xl">
+                        <div className="flex-1 text-center lg:text-left max-w-2xl relative z-10">
                             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight mb-6">
                                 <span className="text-gradient">HRprep: Train Smarter.</span>
                                 <br />
@@ -29,20 +67,28 @@ export function HomePage() {
                                 Meet <span className="font-semibold text-primary">Quinn</span> — your adaptive AI interview mentor
                                 to guide you through interview preparation and career advancement.
                             </p>
-                            <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                                <Link to="/choose-path" className="btn-cta px-8 py-4 text-lg rounded-full">
+
+                            <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start items-center">
+                                <MagneticButton
+                                    onClick={() => navigate('/choose-path')}
+                                    className="btn-cta px-8 py-4 text-lg rounded-full min-w-[200px]"
+                                >
                                     Start Interview
-                                </Link>
+                                </MagneticButton>
                                 <Link to="/how-it-works" className="btn-ghost px-8 py-4 text-lg rounded-full">
                                     How It Works
                                 </Link>
                             </div>
+
+
                         </div>
 
                         {/* Right: Quinn Illustration */}
                         <div className="flex-1 flex justify-center lg:justify-end">
-                            {/* Neural Knot - directly rendered */}
-                            <div className="relative">
+                            <motion.div
+                                style={{ x: knotX, y: knotY }}
+                                className="relative"
+                            >
                                 {/* Ground Shadow - Standard Stacking */}
                                 <div className="absolute bottom-12 left-1/2 -translate-x-1/2 w-[240px] h-[24px] bg-black/40 blur-xl rounded-[100%]" />
 
@@ -53,14 +99,14 @@ export function HomePage() {
                                         Hi! 👋
                                     </span>
                                 </div>
-                            </div>
+                            </motion.div>
                         </div>
                     </div>
                 </div>
             </section>
 
             {/* Features Section */}
-            <section className="py-20 bg-white">
+            <section className="py-20 bg-white/50 backdrop-blur-sm">
                 <div className="container">
                     <div className="grid md:grid-cols-3 gap-6 lg:gap-8">
                         {/* Feature 1 */}
@@ -106,7 +152,7 @@ export function HomePage() {
             </section>
 
             {/* How It Works */}
-            <section className="py-20 bg-canvas">
+            <section className="py-20 bg-transparent">
                 <div className="container">
                     <div className="section-header">
                         <h2>How HRprep Works</h2>
@@ -160,29 +206,30 @@ export function HomePage() {
             </section>
 
             {/* CTA Section */}
-            <section className="py-20 bg-white">
+            <section className="py-20 bg-white/80">
                 <div className="container">
                     <div className="glass-card-strong p-12 lg:p-16 text-center relative overflow-hidden">
                         {/* Background decoration */}
                         <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-primary/5 to-accent/5 rounded-full blur-3xl" />
                         <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-accent/5 to-primary/5 rounded-full blur-3xl" />
 
-                        <div className="relative">
+                        <div className="relative z-10">
                             <h2 className="text-3xl lg:text-4xl font-bold text-text mb-4">
                                 Ready to Transform Your Interview Skills?
                             </h2>
                             <p className="text-lg text-text-secondary mb-8 max-w-xl mx-auto">
                                 Start practicing with Quinn today. No signup required.
                             </p>
-                            <Link to="/choose-path" className="btn-cta px-10 py-4 text-lg inline-flex">
+                            <MagneticButton
+                                onClick={() => navigate('/choose-path')}
+                                className="btn-cta px-10 py-4 text-lg inline-flex"
+                            >
                                 Start Your Interview →
-                            </Link>
+                            </MagneticButton>
                         </div>
                     </div>
                 </div>
             </section>
-
-
         </div>
     );
 }

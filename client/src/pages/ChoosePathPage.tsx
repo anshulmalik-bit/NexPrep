@@ -1,15 +1,14 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { tracks, type Track, type Role } from '../data/tracks';
 import { useInterviewStore } from '../store/interview-store';
-import { NeuralKnot } from '../components/NeuralKnot';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export function ChoosePathPage() {
     const navigate = useNavigate();
     const [viewMode, setViewMode] = useState<'initial' | 'roles'>('initial');
 
-    const [selectedTrack, setSelectedTrack] = useState<Track | null>(null);
-    const [selectedRole, setSelectedRole] = useState<Role | null>(null);
+    // --- SHARED LOGIC ---
     const {
         setTrackAndRole,
         setQuinnMode,
@@ -17,7 +16,6 @@ export function ChoosePathPage() {
         clearResume
     } = useInterviewStore();
 
-    // ... (keep quick start logic but extract it for reuse/clarity)
     const startGenericRound = () => {
         setTrackAndRole('general', 'general-hr');
         setQuinnMode('SUPPORTIVE');
@@ -26,13 +24,17 @@ export function ChoosePathPage() {
         navigate('/calibration');
     };
 
-    const handleContinue = () => {
-        if (selectedTrack && selectedRole) {
-            setTrackAndRole(selectedTrack.id, selectedRole.id);
-            navigate('/setup');
-        }
+    // --- DASHBOARD LOGIC (For Specific Roles) ---
+    // Only show specific tracks in the dashboard since "Generic" was already a separate choice
+    const specificTracks = useMemo(() => tracks.filter(t => t.id !== 'general'), []);
+    const [selectedTrack, setSelectedTrack] = useState<Track>(specificTracks[0]);
+
+    const handleRoleSelect = (role: Role) => {
+        setTrackAndRole(selectedTrack.id, role.id);
+        navigate('/setup');
     };
 
+    // --- VIEW 1: INITIAL SELECTION ("The Page You Wanted Kept") ---
     if (viewMode === 'initial') {
         return (
             <div className="min-h-screen bg-canvas pt-[72px] flex items-center justify-center p-4">
@@ -66,9 +68,6 @@ export function ChoosePathPage() {
                                     <li className="flex items-center gap-2">
                                         <span className="text-green-500">✓</span> Silent Mode capable
                                     </li>
-                                    <li className="flex items-center gap-2">
-                                        <span className="text-green-500">✓</span> Full Feedback Report
-                                    </li>
                                 </ul>
                                 <span className="inline-flex items-center font-semibold text-primary group-hover:translate-x-1 transition-transform">
                                     Start Now &rarr;
@@ -97,9 +96,6 @@ export function ChoosePathPage() {
                                         <span className="text-accent">✓</span> 50+ Roles Available
                                     </li>
                                     <li className="flex items-center gap-2">
-                                        <span className="text-accent">✓</span> Upload your Resume
-                                    </li>
-                                    <li className="flex items-center gap-2">
                                         <span className="text-accent">✓</span> Role-Specific Analysis
                                     </li>
                                 </ul>
@@ -114,176 +110,116 @@ export function ChoosePathPage() {
         );
     }
 
+    // --- VIEW 2: DASHBOARD (For Efficient Role Selection) ---
     return (
-        <div className="min-h-screen bg-canvas pt-[72px]">
-            <div className="container py-12">
-                {/* Header with Back Button */}
-                <div className="flex items-center gap-4 mb-8">
+        <div className="min-h-screen bg-slate-50 flex flex-col pt-[72px]">
+            {/* Minimal Header */}
+            <div className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between sticky top-[72px] z-20 shadow-sm">
+                <div className="flex items-center gap-4">
                     <button
                         onClick={() => setViewMode('initial')}
-                        className="p-2 hover:bg-slate-100 rounded-full transition-colors text-text-secondary"
+                        className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-400 hover:text-slate-600"
+                        title="Back to Mode Selection"
                     >
-                        &larr; Back
+                        &larr;
                     </button>
                     <div>
-                        <h1 className="text-2xl font-bold text-text">Select Specific Role</h1>
-                        <p className="text-text-secondary">Choose your career track and target role</p>
+                        <h1 className="text-xl font-bold text-slate-800">Select Specific Role</h1>
+                        <p className="text-sm text-slate-500">Choose a career track and target role</p>
                     </div>
                 </div>
-
-                {/* Mobile: Horizontal Scrollable Track Pills */}
-                <div className="lg:hidden mb-8 -mx-4 px-4">
-                    {/* Wrapper with overflow-visible for shadow, inner scroll */}
-                    <div className="overflow-x-auto pb-6 pt-3 -mb-2 scrollbar-hide">
-                        <div className="flex gap-3 px-1">
-                            {tracks.filter(t => t.id !== 'general').map((track) => (
-                                <button
-                                    key={track.id}
-                                    onClick={() => {
-                                        setSelectedTrack(track);
-                                        setSelectedRole(null);
-                                    }}
-                                    className={`flex-shrink-0 px-4 py-2.5 rounded-full font-medium text-sm whitespace-nowrap transition-all duration-200
-                                        ${selectedTrack?.id === track.id
-                                            ? 'bg-gradient-to-r from-primary to-primary-light text-white'
-                                            : 'bg-white border border-slate-200 text-text hover:border-primary/30'
-                                        }`}
-                                    style={selectedTrack?.id === track.id ? {
-                                        filter: 'drop-shadow(0 4px 12px rgba(99, 102, 241, 0.4))'
-                                    } : {}}
-                                >
-                                    <span className="mr-1.5">{track.emoji}</span>
-                                    {track.name}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
+                <div className="text-sm text-slate-400 font-mono hidden sm:block">
+                    {specificTracks.reduce((acc, t) => acc + t.roles.length, 0)} ROLES AVAILABLE
                 </div>
+            </div>
 
-                {/* Desktop: Two Column Layout */}
-                <div className="flex flex-col lg:flex-row gap-8">
-                    {/* Left: Track Grid (Desktop) */}
-                    <div className="hidden lg:block lg:w-1/2">
-                        <h3 className="text-lg font-semibold text-text mb-4">Select Track</h3>
-
-                        <div className="grid grid-cols-2 gap-4">
-                            {tracks.filter(t => t.id !== 'general').map((track) => (
-                                <button
-                                    key={track.id}
-                                    onClick={() => {
-                                        setSelectedTrack(track);
-                                        setSelectedRole(null);
-                                    }}
-                                    className={`glass-card p-6 text-left transition-all duration-300 group relative z-0 hover:z-10
-                                        ${selectedTrack?.id === track.id
-                                            ? 'ring-2 ring-primary shadow-frost-lg z-10'
-                                            : 'hover:shadow-frost-lg hover:-translate-y-1'
-                                        }`}
-                                >
-                                    <div className="flex items-start gap-4">
-                                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl transition-transform duration-300 group-hover:scale-110
-                                            ${selectedTrack?.id === track.id
-                                                ? 'bg-gradient-to-br from-primary to-primary-light'
-                                                : 'bg-gradient-to-br from-primary/10 to-accent/10'
+            <div className="flex-1 flex overflow-hidden">
+                {/* 1. Left Sidebar (Specific Tracks Only) */}
+                <div className="w-72 bg-white border-r border-slate-200 overflow-y-auto flex flex-col shadow-[4px_0_24px_rgba(0,0,0,0.02)] z-10">
+                    <div className="p-4 flex-1">
+                        <div className="space-y-1">
+                            {specificTracks.map((track) => {
+                                const isSelected = selectedTrack.id === track.id;
+                                return (
+                                    <button
+                                        key={track.id}
+                                        onClick={() => setSelectedTrack(track)}
+                                        className={`w-full flex items-center justify-between p-3 rounded-lg text-left transition-all group relative
+                                            ${isSelected
+                                                ? 'bg-slate-800 text-white shadow-lg'
+                                                : 'hover:bg-slate-100 text-slate-600'
                                             }`}
-                                        >
-                                            {track.emoji}
+                                    >
+                                        <div className="flex items-center gap-3 relative z-10">
+                                            <span className={`text-lg transition-transform ${isSelected ? 'scale-110' : ''}`}>
+                                                {track.emoji}
+                                            </span>
+                                            <span className="font-medium truncate">{track.name}</span>
                                         </div>
-                                        <div className="flex-1 min-w-0">
-                                            <h4 className="font-semibold text-text mb-1 truncate">{track.name}</h4>
-                                            <p className="text-sm text-text-secondary line-clamp-2">{track.description}</p>
-                                        </div>
-                                    </div>
-                                    {selectedTrack?.id === track.id && (
-                                        <div className="mt-3 flex items-center text-sm text-primary font-medium">
-                                            <span className="mr-2">✓</span> Selected
-                                        </div>
-                                    )}
-                                </button>
-                            ))}
+                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full relative z-10 
+                                            ${isSelected
+                                                ? 'bg-white/20 text-white'
+                                                : 'bg-slate-100 text-slate-400 group-hover:bg-white'
+                                            }`}>
+                                            {track.roles.length}
+                                        </span>
+                                    </button>
+                                );
+                            })}
                         </div>
                     </div>
+                </div>
 
-                    {/* Right: Role List */}
-                    <div className="lg:w-1/2 pb-28 lg:pb-0">
-                        <h3 className="text-lg font-semibold text-text mb-4">
-                            {selectedTrack ? `Roles in ${selectedTrack.name}` : 'Select a track to see roles'}
-                        </h3>
+                {/* 2. Main Content (Roles Grid) */}
+                <div className="flex-1 overflow-y-auto bg-slate-50 p-6 md:p-8">
+                    <AnimatePresence mode="wait">
+                        <motion.div
+                            key={selectedTrack.id}
+                            initial={{ opacity: 0, x: 10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: -10 }}
+                            transition={{ duration: 0.2 }}
+                            className="max-w-6xl mx-auto"
+                        >
+                            {/* Track Header */}
+                            <div className="mb-8 flex items-end justify-between border-b border-slate-200 pb-6">
+                                <div>
+                                    <div className="flex items-center gap-2 text-slate-400 text-sm font-medium mb-2 uppercase tracking-widest">
+                                        Selected Track
+                                    </div>
+                                    <h2 className="text-3xl font-bold text-slate-900 flex items-center gap-3">
+                                        <span className="text-4xl">{selectedTrack.emoji}</span>
+                                        {selectedTrack.name}
+                                    </h2>
+                                    <p className="text-slate-500 mt-2 max-w-2xl text-lg">
+                                        {selectedTrack.description}
+                                    </p>
+                                </div>
+                            </div>
 
-                        {selectedTrack ? (
-                            <div className="space-y-3">
+                            {/* Dense Roles Grid */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                                 {selectedTrack.roles.map((role) => (
                                     <button
                                         key={role.id}
-                                        onClick={() => setSelectedRole(role)}
-                                        className={`w-full glass-card p-4 text-left transition-all duration-200 active:scale-[0.98]
-                                            ${selectedRole?.id === role.id
-                                                ? 'outline outline-2 outline-accent shadow-frost-lg bg-accent/5'
-                                                : 'hover:shadow-frost hover:-translate-y-1'
-                                            }`}
+                                        onClick={() => handleRoleSelect(role)}
+                                        className="bg-white border border-slate-200 rounded-xl p-5 text-left hover:border-primary/50 hover:shadow-md hover:-translate-y-0.5 transition-all group relative overflow-hidden"
                                     >
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex-1 min-w-0 pr-3">
-                                                <h5 className="font-medium text-text">{role.name}</h5>
-                                                <p className="text-sm text-text-secondary mt-0.5">{role.description}</p>
-                                            </div>
-                                            {selectedRole?.id === role.id && (
-                                                <div className="flex-shrink-0 w-6 h-6 rounded-full bg-accent flex items-center justify-center text-white text-sm">
-                                                    ✓
-                                                </div>
-                                            )}
+                                        <div className="absolute top-4 right-4 text-primary opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0">
+                                            ➔
                                         </div>
+
+                                        <h3 className="font-bold text-slate-800 text-lg mb-1 group-hover:text-primary transition-colors pr-8">
+                                            {role.name}
+                                        </h3>
+                                        <p className="text-slate-500 text-sm leading-relaxed line-clamp-2">
+                                            {role.description}
+                                        </p>
                                     </button>
                                 ))}
                             </div>
-                        ) : (
-                            <div className="glass-card p-12 text-center">
-                                <div className="mx-auto mb-4 opacity-50 flex justify-center">
-                                    <NeuralKnot size="sm" state="idle" />
-                                </div>
-                                <p className="text-text-secondary">
-                                    Choose a career track to see available roles
-                                </p>
-                            </div>
-                        )}
-
-                        {/* Bottom padding to account for fixed button */}
-                        <div className="h-32"></div>
-
-                        {/* Unified Fixed Bottom Bar */}
-                        <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/95 backdrop-blur-xl border-t border-slate-100 shadow-frost-lg z-40">
-                            <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-                                <div className="text-sm font-medium">
-                                    {selectedTrack ? (
-                                        <>
-                                            <span className="text-text-secondary">Selected: </span>
-                                            <span className="text-text">{selectedTrack.name}</span>
-                                            {selectedRole && (
-                                                <span className="text-primary"> → {selectedRole.name}</span>
-                                            )}
-                                        </>
-                                    ) : (
-                                        <span className="text-text-muted">Select a track to begin</span>
-                                    )}
-                                </div>
-
-                                <button
-                                    onClick={handleContinue}
-                                    disabled={!selectedTrack || !selectedRole}
-                                    className={`w-full sm:w-auto px-8 py-3 rounded-xl font-semibold text-lg transition-all duration-300
-                                ${selectedTrack && selectedRole
-                                            ? 'btn-cta shadow-lg hover:shadow-xl hover:-translate-y-0.5'
-                                            : 'bg-slate-100 text-text-muted cursor-not-allowed'
-                                        }`}
-                                >
-                                    {selectedTrack && selectedRole
-                                        ? `Continue as ${selectedRole.name} →`
-                                        : 'Select Track & Role'
-                                    }
-                                </button>
-                            </div>
-                        </div>
-                    </div>
+                        </motion.div>
+                    </AnimatePresence>
                 </div>
             </div>
         </div>

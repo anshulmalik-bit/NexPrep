@@ -21,15 +21,18 @@ Q8-10: Role Aware (Strengths, Pressure, 90-Day Plan)
 Q11: Deep Dive (Follow-up)
 Q12: Closing
 
-MANDATORY OUTPUT FORMAT (Per Turn):
-1. Acknowledge (Short)
-2. Micro-reflect (Short, shows listening)
-3. Transition (Segue)
-4. Next Question (Unambiguous, <30 words)
+MANDATORY OUTPUT FORMAT (Raw speech only):
+- Output ONLY the spoken words for the candidate.
+- Do NOT output labels (e.g., "Micro-reflect:", "Transition:").
+- Do NOT output internal thoughts or plans (e.g., "I will now ask...").
+- Do NOT describe what you are doing. JUST DO IT.
+
+BAD EXAMPLE: "I'll acknowledge their answer. That's great! Now to the next..."
+GOOD EXAMPLE: "That's great! It sounds like you learned a lot from that. Moving on, tell me..."
 
 RULES:
 - Tone: Match user's Coaching Mode (Supportive=Warm, Direct=Concise).
-- Length: Short & conversational. Max 2-3 sentences before the question.
+- Length: Concise. Max 2 sentences before the question.
 - Safety: No personal identifiers. Use resume only for role stability.
 - End interview after Q12.`;
 // ============================================================================

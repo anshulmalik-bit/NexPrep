@@ -1,66 +1,50 @@
-import { type FC, useEffect, useState } from 'react';
+import { useEffect } from 'react';
+import confetti from 'canvas-confetti';
 
 interface ConfettiProps {
     trigger: boolean;
-    duration?: number;
-    particleCount?: number;
 }
 
-interface Particle {
-    id: number;
-    left: string;
-    delay: string;
-    size: string;
-}
-
-export const Confetti: FC<ConfettiProps> = ({
-    trigger,
-    duration = 3000,
-    particleCount = 50,
-}) => {
-    const [particles, setParticles] = useState<Particle[]>([]);
-    const [isActive, setIsActive] = useState(false);
-
+export const Confetti = ({ trigger }: ConfettiProps) => {
     useEffect(() => {
-        if (trigger && !isActive) {
-            setIsActive(true);
+        if (trigger) {
+            const count = 200;
+            const defaults = {
+                origin: { y: 0.7 }
+            };
 
-            // Generate particles
-            const newParticles: Particle[] = Array.from({ length: particleCount }, (_, i) => ({
-                id: i,
-                left: `${Math.random() * 100}%`,
-                delay: `${Math.random() * 0.5}s`,
-                size: `${6 + Math.random() * 8}px`,
-            }));
+            function fire(particleRatio: number, opts: any) {
+                confetti({
+                    ...defaults,
+                    ...opts,
+                    particleCount: Math.floor(count * particleRatio)
+                });
+            }
 
-            setParticles(newParticles);
-
-            // Clean up after animation
-            const timer = setTimeout(() => {
-                setParticles([]);
-                setIsActive(false);
-            }, duration);
-
-            return () => clearTimeout(timer);
+            fire(0.25, {
+                spread: 26,
+                startVelocity: 55,
+            });
+            fire(0.2, {
+                spread: 60,
+            });
+            fire(0.35, {
+                spread: 100,
+                decay: 0.91,
+                scalar: 0.8
+            });
+            fire(0.1, {
+                spread: 120,
+                startVelocity: 25,
+                decay: 0.92,
+                scalar: 1.2
+            });
+            fire(0.1, {
+                spread: 120,
+                startVelocity: 45,
+            });
         }
-    }, [trigger, duration, particleCount, isActive]);
+    }, [trigger]);
 
-    if (particles.length === 0) return null;
-
-    return (
-        <div className="confetti-container">
-            {particles.map((particle) => (
-                <div
-                    key={particle.id}
-                    className="confetti-piece"
-                    style={{
-                        left: particle.left,
-                        animationDelay: particle.delay,
-                        width: particle.size,
-                        height: particle.size,
-                    }}
-                />
-            ))}
-        </div>
-    );
+    return null;
 };

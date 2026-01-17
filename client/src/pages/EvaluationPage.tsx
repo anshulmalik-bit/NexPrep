@@ -66,12 +66,50 @@ export function EvaluationPage() {
         loadReport();
     }, [sessionId, historySessionId]);
 
-    // Trigger confetti on strengths slide
-    useEffect(() => {
-        if (currentSlide === 1 && !showConfetti) {
-            setTimeout(() => setShowConfetti(true), 500);
+    // Calculate average score from answers, or fall back to skill matrix average
+    const answersWithScores = answers.filter(a => a.evaluation?.score !== undefined);
+    const avgFromAnswers = answersWithScores.length > 0
+        ? Math.round(answersWithScores.reduce((sum, a) => sum + (a.evaluation?.score || 0), 0) / answersWithScores.length)
+        : 0;
+
+    // Use skill matrix average if we don't have proper answer scores
+    const skillMatrixAvg = report?.skillMatrix && report.skillMatrix.length > 0
+        ? Math.round(report.skillMatrix.reduce((sum: number, s: { score?: number }) => sum + (s.score || 0), 0) / report.skillMatrix.length)
+        : 0;
+
+    let baseScore = avgFromAnswers > 0 ? avgFromAnswers : skillMatrixAvg;
+
+    // Factor in ATS Score if available (30% weight or equal weight? Let's do 50/50 split if answers are few, or weighted)
+    // If we have very few answers, ATS score matters more. If we have a full interview, ATS score is a baseline.
+    // Let's go with: Final = (Interview * 0.7) + (ATS * 0.3)
+    let finalScore = baseScore;
+
+    if (atsAnalysis?.resumeScore) {
+        // If interview score is 0 (no answers), just use ATS score
+        if (baseScore === 0) {
+            finalScore = atsAnalysis.resumeScore;
+        } else {
+            // Weighted average: 70% Interview, 30% Resume
+            finalScore = Math.round((baseScore * 0.7) + (atsAnalysis.resumeScore * 0.3));
         }
-    }, [currentSlide]);
+    }
+
+    const avgScore = finalScore;
+
+    // Trigger confetti on high score
+    useEffect(() => {
+        // Wait for calculation
+        if (loading) return;
+
+        // Check if score is high enough (e.g. 70+)
+        if (avgScore >= 70 && !showConfetti) {
+            // Delay slightly for effect
+            const timer = setTimeout(() => {
+                setShowConfetti(true);
+            }, 800);
+            return () => clearTimeout(timer);
+        }
+    }, [loading, avgScore]);
 
     const loadReport = async () => {
         try {
@@ -167,36 +205,6 @@ export function EvaluationPage() {
             setCurrentSlide(currentSlide - 1);
         }
     };
-
-    // Calculate average score from answers, or fall back to skill matrix average
-    const answersWithScores = answers.filter(a => a.evaluation?.score !== undefined);
-    const avgFromAnswers = answersWithScores.length > 0
-        ? Math.round(answersWithScores.reduce((sum, a) => sum + (a.evaluation?.score || 0), 0) / answersWithScores.length)
-        : 0;
-
-    // Use skill matrix average if we don't have proper answer scores
-    const skillMatrixAvg = report?.skillMatrix && report.skillMatrix.length > 0
-        ? Math.round(report.skillMatrix.reduce((sum: number, s: { score?: number }) => sum + (s.score || 0), 0) / report.skillMatrix.length)
-        : 0;
-
-    let baseScore = avgFromAnswers > 0 ? avgFromAnswers : skillMatrixAvg;
-
-    // Factor in ATS Score if available (30% weight or equal weight? Let's do 50/50 split if answers are few, or weighted)
-    // If we have very few answers, ATS score matters more. If we have a full interview, ATS score is a baseline.
-    // Let's go with: Final = (Interview * 0.7) + (ATS * 0.3)
-    let finalScore = baseScore;
-
-    if (atsAnalysis?.resumeScore) {
-        // If interview score is 0 (no answers), just use ATS score
-        if (baseScore === 0) {
-            finalScore = atsAnalysis.resumeScore;
-        } else {
-            // Weighted average: 70% Interview, 30% Resume
-            finalScore = Math.round((baseScore * 0.7) + (atsAnalysis.resumeScore * 0.3));
-        }
-    }
-
-    const avgScore = finalScore;
 
     if (loading) {
         return (

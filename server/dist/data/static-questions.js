@@ -26,8 +26,8 @@ export const staticQuestions = [
     },
     {
         id: 'hr-q6',
-        text: "The 'Silent Treatment' (Inteviewer stays silent)",
-        idealAnswerKeyPoints: "Keep quiet yourself for a while and then ask, with sincere politeness: 'Is there anything else I can fill in on that point?'"
+        text: "How do you handle ambiguous situations where you don't have clear instructions?",
+        idealAnswerKeyPoints: "Demonstrate initiative and your process for gathering necessary information to proceed effectively."
     },
     {
         id: 'hr-q7',
@@ -86,8 +86,8 @@ export const staticQuestions = [
     },
     {
         id: 'hr-q18',
-        text: "The 'Fatal Flaw' question (e.g. strict requirement missing)",
-        idealAnswerKeyPoints: "Don't be defensive. Address the objection by diminishing the buyer's anxiety, showing how your other strengths compensate."
+        text: "What is one skill you are currently working to improve, and how are you doing it?",
+        idealAnswerKeyPoints: "Show self-awareness and a proactive approach to professional development."
     },
     {
         id: 'hr-q19',
@@ -96,8 +96,8 @@ export const staticQuestions = [
     },
     {
         id: 'hr-q20',
-        text: "On confidential matters... (Request for confidential info)",
-        idealAnswerKeyPoints: "Never reveal anything truly confidential about a present or former employer. It tests your integrity."
+        text: "Describe a time you had to handle sensitive or confidential information.",
+        idealAnswerKeyPoints: "Emphasize integrity, discretion, and adherence to protocol."
     },
     {
         id: 'hr-q21',
@@ -181,8 +181,8 @@ export const staticQuestions = [
     },
     {
         id: 'hr-q37',
-        text: "What do you see as the proper role/mission of... (your title/manager/company)?",
-        idealAnswerKeyPoints: "Identify 3-6 essential qualities for success in that role."
+        text: "In your opinion, what is the most critical impact this role should have on the company?",
+        idealAnswerKeyPoints: "Show you understand the strategic value and core responsibilities of the position."
     },
     {
         id: 'hr-q38',
@@ -236,8 +236,8 @@ export const staticQuestions = [
     },
     {
         id: 'hr-q48',
-        text: "The 'Hypothetical Problem' (How would you handle this...?)",
-        idealAnswerKeyPoints: "Do NOT try to solve it on the spot. Describe the rational, methodical process you would follow to analyze and solve it."
+        text: "If you were assigned a project with a deadline that was impossible to meet, how would you handle it?",
+        idealAnswerKeyPoints: "Focus on communication, prioritization, and proposing realistic alternatives."
     },
     {
         id: 'hr-q49',
@@ -261,8 +261,8 @@ export const staticQuestions = [
     },
     {
         id: 'hr-q53',
-        text: "Sell me this stapler...",
-        idealAnswerKeyPoints: "Find out what they want, then show them how to get it (Needs Analysis first)."
+        text: "Tell me about a time you had to persuade someone to accept an idea they were initially resistant to.",
+        idealAnswerKeyPoints: "Focus on empathy, data-driven arguments, and successful conflict resolution."
     },
     {
         id: 'hr-q54',
@@ -271,13 +271,13 @@ export const staticQuestions = [
     },
     {
         id: 'hr-q55',
-        text: "The Illegal Question (Age, Religion, Family, etc.)",
-        idealAnswerKeyPoints: "Most interviewers know these are taboos. If asked, you can choose to answer or politely decline if not relevant to job advice."
+        text: "How do you maintain a healthy work-life balance while meeting demanding professional goals?",
+        idealAnswerKeyPoints: "Show you have sustainable habits that prevent burnout ensuring long-term performance."
     },
     {
         id: 'hr-q56',
-        text: "The 'Secret' Illegal Question (Bias check)",
-        idealAnswerKeyPoints: "Answer the unasked question. If you suspect bias, demonstrate why you are a good fit and able to handle the job."
+        text: "How do you ensure you are being inclusive when working with a diverse team?",
+        idealAnswerKeyPoints: "Demonstrate respect, active listening, and awareness of different perspectives."
     },
     {
         id: 'hr-q57',
@@ -291,8 +291,8 @@ export const staticQuestions = [
     },
     {
         id: 'hr-q59',
-        text: "The Opinion Question (Politics, Abortion, etc.)",
-        idealAnswerKeyPoints: "If uncomfortable, ask a question in return. Avoid strict opinions that might conflict with the interviewer."
+        text: "How do you handle a situation where your opinion differs significantly from your manager's?",
+        idealAnswerKeyPoints: "Focus on respectful dialogue, data-driven disagreement, and commit-to-execute once a decision is made."
     },
     {
         id: 'hr-q60',
