@@ -1,0 +1,296 @@
+/**
+ * Quinn Interview Generator Service
+ *
+ * Single source-of-truth for Quinn's question-generation during interviews.
+ * Implements a 12-question HR-focused interview with conversational behavior.
+ */
+import { LLMFactory } from './llm/factory.js';
+import { QUINN_TOTAL_QUESTIONS, QUINN_END_MESSAGE, QUINN_EMPTY_TRANSCRIPT_MESSAGE, } from './quinn-types.js';
+// ============================================================================
+// QUINN INTERVIEW GENERATOR SYSTEM PROMPT
+// ============================================================================
+const QUINN_SYSTEM_PROMPT = `You are QUINN, NexPrep's conversational HR interviewer. Conduct a 12-question, HR-focused interview that feels human, natural, and personalized. Follow these non-negotiable rules:
+
+Interview scope — Stay strictly HR/behavioral (soft skills, teamwork, ownership, communication, motivation). Do not ask technical questions or request technical problem solving.
+
+Structure (exact 12 questions)
+
+Act I — Warm-up (2): self + motivation.
+
+Act II — Behavioral Core (5): challenge, collaboration, conflict, ownership, motivation/industry alignment.
+
+Act III — Role-aware HR (3): role-aligned strengths, handling pressure, 90-day learning goals.
+
+Act IV — Deep Dive (1): targeted follow-up probing a detected weakness.
+
+Act V — Reflection (1): closing introspection, what sets you apart.
+End after the 12th question.
+
+Per-turn conversational behavior (MANDATORY)
+For every user answer, produce output in this micro-structure:
+
+Acknowledge (1 short sentence)
+
+Micro-reflect (1 short sentence showing understanding)
+
+Transition (1 short sentence that segues)
+
+Then the next question (single clear question, ≤30 words, HR-focused)
+Do not output question lists or numbering. Keep language natural and concise. Tone must match coaching mode.
+
+Tone / coachingMode
+
+SUPPORTIVE: warm, encouraging, sandwich-style correction.
+
+DIRECT: concise, blunt, professional but never rude.
+Adapt your responses to the chosen coachingMode.
+
+Question constraints
+
+Each question must be HR-focused, unambiguous, ≤30 words.
+
+Expect the user to speak for 45–90 seconds.
+
+Never chain multiple sub-questions into one prompt.
+
+Avoid asking for lists or multi-step technical explanations.
+
+Short, actionable responses
+Keep responses short and conversational. Do not return long paragraphs. Aim for a few short sentences plus the next question.
+
+Safety & privacy
+Do not request or infer sensitive personal information. Use resumeContext only for role-aware questions. Never demand raw audio/video uploads.`;
+// ============================================================================
+// FALLBACK QUESTIONS (used when LLM fails)
+// ============================================================================
+const FALLBACK_QUESTIONS = {
+    1: "Let's start by getting to know you. Tell me about yourself and what brings you to this role.",
+    2: "What motivates you to pursue this opportunity?",
+    3: "Describe a challenging situation you faced at work and how you handled it.",
+    4: "Tell me about a time you collaborated successfully with a team.",
+    5: "How do you handle disagreements or conflicts with colleagues?",
+    6: "Share an example where you took ownership of a difficult project.",
+    7: "What draws you to this industry, and how do you stay motivated?",
+    8: "What strengths would you bring to this role?",
+    9: "How do you perform under pressure or tight deadlines?",
+    10: "What would your first 90 days look like if you joined us?",
+    11: "Based on our conversation, tell me more about how you handle feedback.",
+    12: "Finally, what sets you apart from other candidates?",
+};
+// ============================================================================
+// MAIN SERVICE FUNCTION
+// ============================================================================
+/**
+ * Generate Quinn's next utterance in the interview.
+ *
+ * This is the single-call realtime path - no chained summarization or
+ * pre-processing LLM calls.
+ */
+export async function generateQuinnResponse(input) {
+    const startTime = Date.now();
+    const { sessionId, requestId, clientState, target, resumeContext, lastUserMessage } = input;
+    const { currentQuestionIndex, coachingMode } = clientState;
+    // Build diagnostic base
+    const buildDiagnostic = (modelUsed, fallbackReason) => ({
+        modelUsed,
+        latencyMs: Date.now() - startTime,
+        tokenEstimate: Math.ceil((resumeContext.length + lastUserMessage.length + QUINN_SYSTEM_PROMPT.length) / 4),
+        fallbackReason,
+    });
+    // ========================================================================
+    // GUARD: Early-end (question 12 reached)
+    // ========================================================================
+    if (currentQuestionIndex >= QUINN_TOTAL_QUESTIONS) {
+        logTelemetry(sessionId, requestId, currentQuestionIndex, target.role, 'none', 0, false, 'early-end-guard');
+        return {
+            text: QUINN_END_MESSAGE,
+            isInterviewComplete: true,
+            diagnostic: buildDiagnostic('none'),
+        };
+    }
+    // ========================================================================
+    // GUARD: Empty transcript
+    // ========================================================================
+    if (!lastUserMessage || lastUserMessage.trim() === '') {
+        logTelemetry(sessionId, requestId, currentQuestionIndex, target.role, 'none', 0, false, 'empty-transcript');
+        return {
+            text: QUINN_EMPTY_TRANSCRIPT_MESSAGE,
+            isInterviewComplete: false,
+            diagnostic: buildDiagnostic('none'),
+        };
+    }
+    // ========================================================================
+    // BUILD USER PROMPT
+    // ========================================================================
+    const userPrompt = buildUserPrompt(input);
+    // ========================================================================
+    // CALL LLM (single call, no chaining)
+    // ========================================================================
+    try {
+        const provider = LLMFactory.getProvider();
+        const modelUsed = provider.getProviderName();
+        const response = await provider.generateText(`${QUINN_SYSTEM_PROMPT}\n\n${userPrompt}`, {
+            temperature: 0.7,
+            maxOutputTokens: 300, // Keep responses short
+        });
+        // Validate response
+        if (!response || typeof response !== 'string' || response.trim().length < 10) {
+            throw new Error('Invalid LLM response: too short or malformed');
+        }
+        const diagnostic = buildDiagnostic(modelUsed);
+        logTelemetry(sessionId, requestId, currentQuestionIndex, target.role, modelUsed, diagnostic.latencyMs, false);
+        return {
+            text: response.trim(),
+            isInterviewComplete: false,
+            diagnostic,
+        };
+    }
+    catch (error) {
+        // ====================================================================
+        // FALLBACK: LLM failure
+        // ====================================================================
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        console.error(`[Quinn] LLM Error for session=${sessionId} request=${requestId}:`, errorMessage);
+        const fallbackText = generateFallbackResponse(currentQuestionIndex, coachingMode, target.role);
+        const diagnostic = buildDiagnostic('fallback', errorMessage);
+        logTelemetry(sessionId, requestId, currentQuestionIndex, target.role, 'fallback', diagnostic.latencyMs, true, errorMessage);
+        return {
+            text: fallbackText,
+            isInterviewComplete: false,
+            diagnostic,
+            fallback: true,
+            error: errorMessage,
+        };
+    }
+}
+// ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
+/**
+ * Build the user prompt with context for the LLM.
+ */
+function buildUserPrompt(input) {
+    const { clientState, target, resumeContext, lastUserMessage, conversationHistory } = input;
+    const { currentQuestionIndex, coachingMode } = clientState;
+    const companyContext = target.company
+        ? `Target Company: ${target.company}`
+        : target.industry
+            ? `Industry: ${target.industry}`
+            : '';
+    // Explicit guidance for each question phase
+    const questionGuidance = getQuestionPhaseGuidance(currentQuestionIndex + 1);
+    // Build conversation summary for tone/context memory (last 3 Q&As max)
+    let conversationSummary = '';
+    if (conversationHistory && conversationHistory.length > 0) {
+        const recentHistory = conversationHistory.slice(-3); // Last 3 Q&As
+        conversationSummary = `
+Previous Conversation (for context and tone awareness):
+${recentHistory.map((qa, i) => `Q${conversationHistory.length - recentHistory.length + i + 1}: ${qa.question.slice(0, 100)}...
+A${conversationHistory.length - recentHistory.length + i + 1}: "${qa.answer}"`).join('\n')}
+
+IMPORTANT: Adapt your tone and questions based on the candidate's communication style shown above.
+`;
+    }
+    return `Context:
+- Role: ${target.role}
+- Track: ${target.track}
+${companyContext ? `- ${companyContext}` : ''}
+- Resume Summary: ${resumeContext || 'Not provided'}
+- Coaching Mode: ${coachingMode}
+- Current Question Number: ${currentQuestionIndex + 1} of ${QUINN_TOTAL_QUESTIONS}
+
+IMPORTANT: ${questionGuidance}
+${conversationSummary}
+User's Last Answer:
+"${lastUserMessage}"
+
+Generate your response following the per-turn conversational behavior (Acknowledge → Micro-reflect → Transition → Next Question).`;
+}
+/**
+ * Get explicit guidance for what each question should focus on.
+ */
+function getQuestionPhaseGuidance(questionNum) {
+    switch (questionNum) {
+        case 1: return "Q1 is INTRO. Ask them to tell you about themselves and their background.";
+        case 2: return "Q2 is MOTIVATION. Ask what motivates them in their career.";
+        case 3: return "Q3 is CHALLENGE. Ask about a challenging situation they handled.";
+        case 4: return "Q4 is COLLABORATION. Ask about teamwork or collaboration.";
+        case 5: return "Q5 is CONFLICT. Ask how they handle disagreements or conflicts.";
+        case 6: return "Q6 is OWNERSHIP. Ask about taking ownership of a project.";
+        case 7: return "Q7 is INDUSTRY FIT. Ask about their connection to the industry.";
+        case 8: return "Q8 is ROLE STRENGTHS. Ask what strengths they bring to this role.";
+        case 9: return "Q9 is PRESSURE. Ask how they handle pressure or deadlines.";
+        case 10: return "Q10 is 90-DAY PLAN. Ask what their first 90 days would look like.";
+        case 11: return "Q11 is DEEP DIVE. Probe a weakness or gap from earlier answers.";
+        case 12: return "Q12 is CLOSING. Ask what sets them apart from others.";
+        default: return "Follow the interview structure as defined.";
+    }
+}
+/**
+ * Generate a fallback response when LLM fails.
+ */
+function generateFallbackResponse(questionIndex, coachingMode, role) {
+    const nextQuestionNum = questionIndex + 1;
+    const fallbackQuestion = FALLBACK_QUESTIONS[nextQuestionNum] ||
+        `Tell me about a significant experience that shaped your approach to being a ${role}.`;
+    if (coachingMode === 'SUPPORTIVE') {
+        return `Thanks for sharing that. Let me ask you this: ${fallbackQuestion}`;
+    }
+    else {
+        return `Noted. Next question: ${fallbackQuestion}`;
+    }
+}
+/**
+ * Log telemetry for monitoring.
+ */
+function logTelemetry(sessionId, requestId, questionIndex, role, modelUsed, latencyMs, fallback, error) {
+    const logEntry = {
+        timestamp: new Date().toISOString(),
+        sessionId,
+        requestId,
+        questionIndex,
+        role,
+        modelUsed,
+        latencyMs,
+        fallback,
+        ...(error && { error }),
+    };
+    console.log('[Quinn Telemetry]', JSON.stringify(logEntry));
+}
+/**
+ * @deprecated Use generateQuinnResponse instead
+ */
+export async function generateQuestion(input) {
+    const { track, role, quinnMode, resumeText, companyName, industryId, questionNumber, previousQuestions } = input;
+    // Convert to new format
+    const newInput = {
+        sessionId: 'legacy-' + Date.now(),
+        requestId: 'legacy-' + Math.random().toString(36).substr(2, 9),
+        clientState: {
+            currentQuestionIndex: questionNumber - 1, // Convert 1-based to 0-based
+            coachingMode: quinnMode,
+        },
+        target: {
+            track,
+            role,
+            company: companyName,
+            industry: industryId,
+        },
+        resumeContext: resumeText ? resumeText.substring(0, 400) : '',
+        lastUserMessage: previousQuestions.length > 0
+            ? `Previous context: ${previousQuestions.slice(-1)[0]}`
+            : 'Starting interview.',
+    };
+    const result = await generateQuinnResponse(newInput);
+    // Extract question from the response text (best effort)
+    const questionMatch = result.text.match(/[?]([^?]*[?])?$/);
+    const extractedQuestion = questionMatch
+        ? result.text.substring(result.text.lastIndexOf('?', result.text.length - 2) + 1).trim() || result.text
+        : result.text;
+    return {
+        question: extractedQuestion.endsWith('?') ? extractedQuestion : result.text,
+        competencyType: 'behavioral',
+        difficulty: questionNumber <= 2 ? 'easy' : questionNumber <= 7 ? 'medium' : 'hard',
+        hintsAvailable: true,
+    };
+}

@@ -1,0 +1,200 @@
+/* =========================================
+   NexPrep Premium Leaderboard
+   Clean table with highlights
+   ========================================= */
+
+.leaderboard-page {
+    padding: calc(var(--nav-height) + var(--space-12)) 0 var(--space-24);
+    min-height: 100vh;
+    background: var(--color-background);
+}
+
+.leaderboard-page .leaderboard {
+    max-width: 700px;
+    margin: 0 auto;
+    background: white;
+    border-radius: var(--radius-2xl);
+    overflow: hidden;
+    box-shadow: var(--shadow-card);
+}
+
+.leaderboard-loading,
+.leaderboard-empty {
+    text-align: center;
+    padding: var(--space-16);
+    background: white;
+    border-radius: var(--radius-2xl);
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+.leaderboard-loading .loading-spinner {
+    margin: 0 auto var(--space-4);
+}
+
+.leaderboard-empty__icon {
+    font-size: var(--text-6xl);
+    margin-bottom: var(--space-6);
+}
+
+.leaderboard-empty h2 {
+    font-size: var(--text-2xl);
+    margin-bottom: var(--space-4);
+}
+
+.leaderboard-empty p {
+    color: var(--color-text-secondary);
+    margin-bottom: var(--space-8);
+}
+
+/* Leaderboard Header */
+.leaderboard__header {
+    display: grid;
+    grid-template-columns: 80px 1fr 80px;
+    gap: var(--space-4);
+    padding: var(--space-4) var(--space-6);
+    background: var(--gradient-brand);
+    color: white;
+    font-weight: var(--font-semibold);
+    font-size: var(--text-sm);
+}
+
+/* Leaderboard Row */
+.leaderboard__row {
+    display: grid;
+    grid-template-columns: 80px 1fr 80px;
+    gap: var(--space-4);
+    padding: var(--space-4) var(--space-6);
+    border-bottom: 1px solid var(--color-border);
+    align-items: center;
+    transition: all var(--transition-base);
+}
+
+.leaderboard__row:hover {
+    background: var(--color-background);
+}
+
+.leaderboard__row:last-child {
+    border-bottom: none;
+}
+
+/* Top 3 Highlight */
+.leaderboard__row:nth-child(2) {
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.08), rgba(255, 215, 0, 0.02));
+}
+
+.leaderboard__row:nth-child(3) {
+    background: linear-gradient(135deg, rgba(192, 192, 192, 0.08), rgba(192, 192, 192, 0.02));
+}
+
+.leaderboard__row:nth-child(4) {
+    background: linear-gradient(135deg, rgba(205, 127, 50, 0.08), rgba(205, 127, 50, 0.02));
+}
+
+/* Rank styling */
+.leaderboard__rank {
+    font-weight: var(--font-bold);
+    font-size: var(--text-lg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.leaderboard__rank--gold {
+    color: #FFD700;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+}
+
+.leaderboard__rank--silver {
+    color: #C0C0C0;
+    text-shadow: 0 0 10px rgba(192, 192, 192, 0.5);
+}
+
+.leaderboard__rank--bronze {
+    color: #CD7F32;
+    text-shadow: 0 0 10px rgba(205, 127, 50, 0.5);
+}
+
+/* Info column */
+.leaderboard__info {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+}
+
+.leaderboard__name {
+    font-weight: var(--font-semibold);
+    color: var(--color-text);
+}
+
+.leaderboard__meta {
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+}
+
+/* Score */
+.leaderboard__score {
+    font-weight: var(--font-bold);
+    font-size: var(--text-lg);
+    color: var(--color-primary);
+    text-align: right;
+}
+
+/* Quinn Commentary for #1 */
+.quinn-commentary {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+    padding: var(--space-5);
+    margin: var(--space-6) auto 0;
+    max-width: 700px;
+    background: var(--gradient-brand-light);
+    border-radius: var(--radius-xl);
+    border: 1px solid var(--color-primary-glow);
+}
+
+.quinn-commentary__avatar {
+    font-size: var(--text-2xl);
+    flex-shrink: 0;
+}
+
+.quinn-commentary__message {
+    font-size: var(--text-sm);
+    color: var(--color-text);
+    margin: 0;
+    font-style: italic;
+}
+
+/* Mobile Responsive */
+@media (max-width: 600px) {
+    .leaderboard-page {
+        padding: calc(var(--nav-height) + var(--space-8)) var(--space-4) var(--space-16);
+    }
+
+    .leaderboard__header {
+        grid-template-columns: 60px 1fr 60px;
+        padding: var(--space-3) var(--space-4);
+        font-size: var(--text-xs);
+    }
+
+    .leaderboard__row {
+        grid-template-columns: 60px 1fr 60px;
+        padding: var(--space-4);
+    }
+
+    .leaderboard__rank {
+        font-size: var(--text-base);
+    }
+
+    .leaderboard__name {
+        font-size: var(--text-sm);
+    }
+
+    .leaderboard__score {
+        font-size: var(--text-base);
+    }
+
+    .quinn-commentary {
+        margin: var(--space-4) 0 0;
+    }
+}

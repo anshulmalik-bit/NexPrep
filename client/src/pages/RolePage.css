@@ -1,0 +1,36 @@
+.role-page {
+    padding: var(--space-8) 0 var(--space-24);
+}
+
+.page-header__track {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-4);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-full);
+    margin-bottom: var(--space-4);
+}
+
+.page-header__emoji {
+    font-size: var(--text-xl);
+}
+
+.page-header__track-name {
+    font-size: var(--text-sm);
+    font-weight: var(--font-semibold);
+    color: var(--color-text-secondary);
+}
+
+.back-btn {
+    margin-bottom: var(--space-4);
+}
+
+.roles-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: var(--space-4);
+    max-width: 1000px;
+    margin: 0 auto;
+}
