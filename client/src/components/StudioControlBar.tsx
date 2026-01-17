@@ -39,6 +39,13 @@ export const StudioControlBar: React.FC<StudioControlBarProps> = ({
     }, [transcript, isRecording]);
 
     useEffect(() => {
+        // Auto-scroll to end during voice input
+        if (isRecording && inputRef.current) {
+            inputRef.current.scrollLeft = inputRef.current.scrollWidth;
+        }
+    }, [textInput, isRecording]);
+
+    useEffect(() => {
         return () => {
             if (timerRef.current) clearInterval(timerRef.current);
             stopListening();
