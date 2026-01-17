@@ -2,6 +2,7 @@ export interface LLMGenerationOptions {
     temperature?: number;
     maxOutputTokens?: number;
     jsonSchema?: any; // For providers that support structured output enforcement
+    systemPrompt?: string; // Optional system instruction
 }
 
 export interface LLMProvider {

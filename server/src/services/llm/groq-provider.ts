@@ -33,17 +33,22 @@ export class GroqProvider implements LLMProvider {
     }
 
     async generateText(prompt: string, options: LLMGenerationOptions = {}): Promise<string> {
-        const { temperature = 0.7, maxOutputTokens = 2048 } = options;
-        const estimatedTokens = this.estimateTokens(prompt);
+        const { temperature = 0.7, maxOutputTokens = 2048, systemPrompt } = options;
+        const fullContent = systemPrompt ? `${systemPrompt}\n${prompt}` : prompt; // Fallback estimate
+        const estimatedTokens = this.estimateTokens(fullContent);
 
         if (!this.limiter.canRequest(estimatedTokens)) {
             // Simple fallback for now, or throw specific error handled by caller
             throw new Error('GROQ_RATE_LIMIT_EXCEEDED');
         }
 
+        const messages: any[] = [];
+        if (systemPrompt) messages.push({ role: 'system', content: systemPrompt });
+        messages.push({ role: 'user', content: prompt });
+
         try {
             const completion = await this.groq.chat.completions.create({
-                messages: [{ role: 'user', content: prompt }],
+                messages: messages as any,
                 model: 'llama-3.1-8b-instant',
                 temperature,
                 max_completion_tokens: maxOutputTokens,
@@ -67,17 +72,22 @@ export class GroqProvider implements LLMProvider {
     }
 
     async generateJson<T>(prompt: string, options: LLMGenerationOptions = {}): Promise<T> {
-        const { temperature = 0.7, maxOutputTokens = 2048 } = options;
-        const estimatedTokens = this.estimateTokens(prompt);
+        const { temperature = 0.7, maxOutputTokens = 2048, systemPrompt } = options;
+        const fullContent = systemPrompt ? `${systemPrompt}\n${prompt}` : prompt;
+        const estimatedTokens = this.estimateTokens(fullContent);
 
         if (!this.limiter.canRequest(estimatedTokens)) {
             throw new Error('GROQ_RATE_LIMIT_EXCEEDED');
         }
 
+        const messages: any[] = [];
+        if (systemPrompt) messages.push({ role: 'system', content: systemPrompt });
+        messages.push({ role: 'user', content: prompt });
+
         try {
             // Groq supports JSON mode for Llama 3.1
             const completion = await this.groq.chat.completions.create({
-                messages: [{ role: 'user', content: prompt }],
+                messages: messages as any,
                 model: 'llama-3.1-8b-instant',
                 temperature,
                 max_completion_tokens: maxOutputTokens,

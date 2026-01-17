@@ -22,36 +22,40 @@ export async function evaluateAnswer(input) {
     const deliveryContext = voiceMetrics
         ? `Voice: Confidence ${(voiceMetrics.confidence || 0).toFixed(0)}/100, Pace ${(voiceMetrics.pace || 0).toFixed(0)}wpm`
         : "Voice: N/A (Text Only)";
-    const prompt = `Role: Evaluator for ${role}.
-Task: Score and critique answer.
-Context:
+    const systemPrompt = `ROLE: Interview Evaluator for ${role}.
+TASK: Score answer (0-100) and critique.
+TONE: ${tone}.
+
+METRICS:
+1. Content Score: Quality/Relevance (0-100).
+2. Flags:
+   - VAGUE (<30 words, generic)
+   - RAMBLING (Repetitive, off-topic)
+   - MONOTONE (Flat voice)
+   - LOW_CONFIDENCE (Voice < 60)
+
+OUTPUT JSON:
+{
+  "contentScore": number,
+  "strengths": ["str1", "str2"],
+  "weaknesses": ["wk1", "wk2"],
+  "missingElements": ["missing1"],
+  "suggestedStructure": "STAR",
+  "improvedSampleAnswer": "One sentence improved version",
+  "flags": ["VAGUE", "RAMBLING"]
+}`;
+    const userPrompt = `CONTEXT:
 Q: "${question}"
 Type: ${competencyType}
 A: "${answer}"
-${deliveryContext}
-Tone: ${tone}.
-
-Instruction: Evaluate CONTENT quality (0-100).
-Check for Bad Habits (Flags):
-- VAGUE: Too short (<30 words) or generic?
-- RAMBLING: Repetitive or off-topic?
-- MONOTONE: (If voice provided)
-- LOW_CONFIDENCE: (If voice provided and <60)
-
-Required JSON Output:
-{
-  "contentScore": <0-100>,
-  "strengths": ["<str1>", "<str2>"],
-  "weaknesses": ["<wk1>", "<wk2>"],
-  "missingElements": ["<missing>"],
-  "suggestedStructure": "<structure>",
-  "improvedSampleAnswer": "<brief sample>",
-  "flags": ["VAGUE", "RAMBLING", "LOW_CONFIDENCE"] 
-}
-`;
+${deliveryContext}`;
     try {
         const provider = LLMFactory.getProvider();
-        const parsed = await provider.generateJson(prompt, { temperature: 0.4, maxOutputTokens: 1024 });
+        const parsed = await provider.generateJson(userPrompt, {
+            temperature: 0.4,
+            maxOutputTokens: 1024,
+            systemPrompt: systemPrompt
+        });
         // Calculate Final Fair Score
         const contentScore = Math.min(100, Math.max(0, parsed.contentScore || 50));
         const finalScore = calculateFairScore(contentScore, voiceMetrics, videoMetrics);

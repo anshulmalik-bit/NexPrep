@@ -63,7 +63,7 @@ export class GeminiProvider implements LLMProvider {
     }
 
     async generateText(prompt: string, options: LLMGenerationOptions = {}): Promise<string> {
-        const { temperature = 0.7, maxOutputTokens = 2048 } = options;
+        const { temperature = 0.7, maxOutputTokens = 2048, systemPrompt } = options;
 
         const model: GenerativeModel = this.genAI.getGenerativeModel({
             model: 'gemini-2.0-flash',
@@ -71,6 +71,7 @@ export class GeminiProvider implements LLMProvider {
                 temperature,
                 maxOutputTokens,
             },
+            systemInstruction: systemPrompt,
         });
 
         return this.callWithRetry(async () => {
@@ -80,7 +81,7 @@ export class GeminiProvider implements LLMProvider {
     }
 
     async generateJson<T>(prompt: string, options: LLMGenerationOptions = {}): Promise<T> {
-        const { temperature = 0.7, maxOutputTokens = 2048 } = options;
+        const { temperature = 0.7, maxOutputTokens = 2048, systemPrompt } = options;
 
         // Gemini supports JSON mode natively
         const model: GenerativeModel = this.genAI.getGenerativeModel({
@@ -90,6 +91,7 @@ export class GeminiProvider implements LLMProvider {
                 maxOutputTokens,
                 responseMimeType: 'application/json',
             },
+            systemInstruction: systemPrompt,
         });
 
         const jsonString = await this.callWithRetry(async () => {

@@ -2,6 +2,7 @@ export interface LLMGenerationOptions {
     temperature?: number;
     maxOutputTokens?: number;
     jsonSchema?: any;
+    systemPrompt?: string;
 }
 export interface LLMProvider {
     /**

@@ -114,46 +114,40 @@ Output JSON: { "improvementPlan": ["Step 1:...", "Step 2:...", ...] }`;
 export async function generateBatchReport(input) {
     const { answers, role, preComputedEvaluations } = input;
     const usePreComputed = preComputedEvaluations && preComputedEvaluations.length === answers.length;
-    const prompt = `Role: Senior Interview Coach.
-Task: ${usePreComputed ? 'Summarize this already-graded interview.' : 'Grade this entire interview.'} for a ${role} role. 
+    const systemPrompt = `ROLE: Senior Interview Coach.
+TASK: ${usePreComputed ? 'Summarize graded' : 'Grade & Summarize'}. Role: ${role}.
 
-Inputs:
-${answers.map((a, i) => {
-        const evalData = usePreComputed ? preComputedEvaluations[i] : null;
-        const delivery = a.voiceMetrics ? `[Voice Confidence: ${(a.voiceMetrics.confidence || 0).toFixed(0)}%]` : "";
-        return `
-Q${i + 1}: ${a.question}
-User Answer: ${a.answer} ${delivery}
-${evalData ? `[EXISTING GRADE: Score ${evalData.score}, Flags: ${evalData.flags?.join(', ') || 'None'}]` : `Key Points: ${a.idealAnswer}`}
-`;
-    }).join('\n')}
-
-Output JSON Object with this exact structure:
+OUTPUT JSON:
 {
-  "summary": "2-3 sentence overall summary",
-  "skillMatrix": [
-    {"skill": "Communication", "score": number},
-    {"skill": "Confidence", "score": number},
-    {"skill": "Content Relevance", "score": number},
-    {"skill": "Professionalism", "score": number},
-    {"skill": "Self Awareness", "score": number}
-  ],
-  "strengths": ["str1", "str2", "str3"],
-  "weaknesses": ["wk1", "wk2", "wk3"],
-  "improvementPlan": ["step1", "step2", "step3", "step4"],
+  "summary": "2-3 sentences",
+  "skillMatrix": [{"skill": "Communication", "score": number}, ...],
+  "strengths": ["str1", "str2"],
+  "weaknesses": ["wk1", "wk2"],
+  "improvementPlan": ["step1", "step2"],
   "evaluations": [
-    ${usePreComputed ? '// COPY the existing scores/feedback provided in input exactly' : '// Generate new scores 0-100'}
+    ${usePreComputed ? '// COPY input scores exactly' : '// Generate scores 0-100'}
     {
       "score": number, 
-      "feedback": "Specific feedback",
-      "strength": "Main strength",
-      "weakness": "Main weakness",
-      "improvedSample": "Improved version"
+      "feedback": "string",
+      "strength": "string",
+      "weakness": "string",
+      "improvedSample": "string"
     }
   ]
 }`;
+    const userPrompt = `INPUTS:
+${answers.map((a, i) => {
+        const evalData = usePreComputed ? preComputedEvaluations[i] : null;
+        const delivery = a.voiceMetrics ? `[Voice: ${(a.voiceMetrics.confidence || 0).toFixed(0)}%]` : "";
+        return `Q${i + 1}: ${a.question}
+A: ${a.answer} ${delivery}
+${evalData ? `[Score ${evalData.score}, Flags: ${evalData.flags?.join(', ') || 'None'}]` : `Key: ${a.idealAnswer}`}`;
+    }).join('\n')}`;
     try {
-        return await getLLM().generateJson(prompt, { temperature: 0.4 });
+        return await getLLM().generateJson(userPrompt, {
+            temperature: 0.4,
+            systemPrompt: systemPrompt
+        });
     }
     catch (error) {
         console.error("Batch report generation failed", error);

@@ -55,13 +55,14 @@ export class GeminiProvider {
         }
     }
     async generateText(prompt, options = {}) {
-        const { temperature = 0.7, maxOutputTokens = 2048 } = options;
+        const { temperature = 0.7, maxOutputTokens = 2048, systemPrompt } = options;
         const model = this.genAI.getGenerativeModel({
             model: 'gemini-2.0-flash',
             generationConfig: {
                 temperature,
                 maxOutputTokens,
             },
+            systemInstruction: systemPrompt,
         });
         return this.callWithRetry(async () => {
             const result = await model.generateContent(prompt);
@@ -69,7 +70,7 @@ export class GeminiProvider {
         });
     }
     async generateJson(prompt, options = {}) {
-        const { temperature = 0.7, maxOutputTokens = 2048 } = options;
+        const { temperature = 0.7, maxOutputTokens = 2048, systemPrompt } = options;
         // Gemini supports JSON mode natively
         const model = this.genAI.getGenerativeModel({
             model: 'gemini-2.0-flash',
@@ -78,6 +79,7 @@ export class GeminiProvider {
                 maxOutputTokens,
                 responseMimeType: 'application/json',
             },
+            systemInstruction: systemPrompt,
         });
         const jsonString = await this.callWithRetry(async () => {
             const result = await model.generateContent(prompt);
