@@ -23,6 +23,7 @@ export const StudioControlBar: React.FC<StudioControlBarProps> = ({
     const [recordingTime, setRecordingTime] = useState(0);
     const timerRef = useRef<number | null>(null);
     const inputRef = useRef<HTMLInputElement>(null);
+    const isSubmitting = useRef(false);
 
     const {
         transcript,
@@ -32,7 +33,7 @@ export const StudioControlBar: React.FC<StudioControlBarProps> = ({
     } = useSpeechRecognition();
 
     useEffect(() => {
-        if (transcript && isRecording) {
+        if (transcript && isRecording && !isSubmitting.current) {
             setTextInput(transcript);
         }
     }, [transcript, isRecording]);
@@ -59,6 +60,7 @@ export const StudioControlBar: React.FC<StudioControlBarProps> = ({
                 timerRef.current = null;
             }
         } else {
+            isSubmitting.current = false; // Reset lock
             startListening();
             setIsRecording(true);
             setRecordingTime(0);
@@ -70,6 +72,7 @@ export const StudioControlBar: React.FC<StudioControlBarProps> = ({
 
     const handleSubmit = () => {
         if (textInput.trim() && !disabled) {
+            isSubmitting.current = true; // Lock updates
             onSubmit(textInput.trim());
             setTextInput('');
             resetTranscript();
