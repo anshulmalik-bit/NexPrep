@@ -69,6 +69,7 @@ const mockQuestions = [
 export function InterviewPage() {
     const navigate = useNavigate();
     const initRef = useRef(false);
+    const isSubmitting = useRef(false);
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [isTyping, setIsTyping] = useState(false);
     const [textInput, setTextInput] = useState('');
@@ -119,11 +120,21 @@ export function InterviewPage() {
         }
     }, [isListening]);
 
+    // Auto-scroll during voice
+    useEffect(() => {
+        if (isListening && inputRef.current) {
+            inputRef.current.scrollLeft = inputRef.current.scrollWidth;
+        }
+    }, [textInput, isListening]);
+
     const toggleMic = () => {
         if (isListening) {
             stopMic();
         } else {
-            startListening((text) => setTextInput(text));
+            isSubmitting.current = false;
+            startListening((text) => {
+                if (!isSubmitting.current) setTextInput(text);
+            });
         }
     };
 
@@ -262,6 +273,8 @@ export function InterviewPage() {
 
     const handleSubmit = async () => {
         if (!textInput.trim() || isLoading || isTyping || !currentQuestion || !sessionId) return;
+
+        isSubmitting.current = true; // Lock voice updates
 
         const answer = textInput.trim();
         setTextInput('');
