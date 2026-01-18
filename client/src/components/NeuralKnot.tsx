@@ -2,7 +2,7 @@ import { type FC } from 'react';
 // @ts-ignore
 // import quinnAvatar from '../assets/quinn-avatar.png';
 
-export type NeuralKnotState = 'idle' | 'thinking' | 'speaking' | 'coaching' | 'warning' | 'celebrating';
+export type NeuralKnotState = 'idle' | 'thinking' | 'speaking' | 'coaching' | 'warning' | 'celebrating' | 'listening';
 
 interface NeuralKnotProps {
     state?: NeuralKnotState;
@@ -42,6 +42,12 @@ export const NeuralKnot: FC<NeuralKnotProps> = ({
             )}
             {state === 'thinking' && (
                 <div className="absolute inset-0 rounded-full bg-indigo-500/10 animate-pulse" />
+            )}
+            {state === 'listening' && (
+                <div className="absolute inset-0 rounded-full ring-2 ring-emerald-400/30 animate-[ping_2s_cubic-bezier(0,0,0.2,1)_infinite]" />
+            )}
+            {state === 'celebrating' && (
+                <div className="absolute inset-0 rounded-full ring-4 ring-yellow-400/50 animate-bounce" />
             )}
         </div>
     );

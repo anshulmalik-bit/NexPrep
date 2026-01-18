@@ -140,7 +140,7 @@ export function Navbar() {
                         />
                         {/* Menu Panel - Full Width on Mobile */}
                         <div
-                            className="absolute inset-x-0 top-0 bg-white shadow-2xl max-h-[calc(100vh-72px)] overflow-y-auto"
+                            className="absolute inset-x-0 top-0 bg-white/80 backdrop-blur-xl shadow-2xl max-h-[calc(100vh-72px)] overflow-y-auto border-b border-slate-100"
                             onClick={(e) => e.stopPropagation()}
                         >
                             <ul className="py-4">
@@ -179,7 +179,7 @@ export function Navbar() {
                                 )}
                                 <Link
                                     to="/choose-path"
-                                    className="block w-full mt-3 px-6 py-4 rounded-xl text-lg font-semibold text-white text-center bg-gradient-to-r from-primary to-primary-light shadow-frost"
+                                    className="block w-full mt-3 px-6 py-4 rounded-xl text-lg font-bold text-white text-center bg-gradient-to-r from-primary to-primary-light shadow-lg shadow-primary/20 hover:shadow-xl transition-all"
                                     onClick={() => setIsOpen(false)}
                                 >
                                     Start Interview →

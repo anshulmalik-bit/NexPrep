@@ -39,8 +39,15 @@ export function Footer() {
                     </div>
                 </div>
 
-                <div className="pt-8 border-t border-slate-200 text-center text-text-muted text-sm">
-                    © 2025 HRprep. All rights reserved.
+                <div className="pt-8 border-t border-slate-200 text-center text-text-muted text-sm flex flex-col items-center gap-4">
+                    <div className="flex items-center gap-4 text-text-secondary font-medium mb-2">
+                        <Link to="/how-it-works" className="hover:text-primary transition-colors">Safety Guide</Link>
+                        <span>•</span>
+                        <Link to="/contact" className="hover:text-primary transition-colors">Privacy Policy</Link>
+                        <span>•</span>
+                        <Link to="/contact" className="hover:text-primary transition-colors">Contact</Link>
+                    </div>
+                    <p>© 2026 HRprep. All rights reserved.</p>
                 </div>
             </div>
         </footer>

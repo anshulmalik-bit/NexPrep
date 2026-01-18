@@ -1,235 +1,198 @@
-import { Link, useNavigate } from 'react-router-dom';
-import { useRef } from 'react';
-import NeuralKnot from '../components/studio/NeuralKnot';
-import { MagneticButton } from '../components/MagneticButton';
-import { motion, useSpring, useMotionValue, useTransform } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { InteractiveHero } from '../components/InteractiveHero';
 
 export function HomePage() {
     const navigate = useNavigate();
-    const containerRef = useRef<HTMLDivElement>(null);
-
-    // Parallax Logic
-    const mouseX = useMotionValue(0);
-    const mouseY = useMotionValue(0);
-
-    // Smooth spring animation for parallax
-    const springX = useSpring(mouseX, { stiffness: 40, damping: 25 });
-    const springY = useSpring(mouseY, { stiffness: 40, damping: 25 });
-
-    const handleMouseMove = (e: React.MouseEvent) => {
-        const { clientX, clientY } = e;
-        const { innerWidth, innerHeight } = window;
-        // Normalize -0.5 to 0.5
-        mouseX.set((clientX / innerWidth) - 0.5);
-        mouseY.set((clientY / innerHeight) - 0.5);
-    };
-
-    // Transformations
-    const bgX = useTransform(springX, [-0.5, 0.5], [30, -30]);
-    const bgY = useTransform(springY, [-0.5, 0.5], [30, -30]);
-    const knotX = useTransform(springX, [-0.5, 0.5], [-20, 20]); // Inverse movement for depth
-    const knotY = useTransform(springY, [-0.5, 0.5], [-20, 20]);
-
-
 
     return (
-        <div
-            ref={containerRef}
-            className="min-h-screen pt-[var(--header-height)]"
-            onMouseMove={handleMouseMove}
-        >
-            {/* Hero Section */}
-            <section className="relative overflow-hidden">
-                {/* Parallax Background Grid */}
-                <motion.div
-                    style={{ x: bgX, y: bgY }}
-                    className="absolute inset-0 pointer-events-none"
-                >
-                    <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/30 to-transparent" />
-                    <div
-                        className="absolute inset-0 opacity-[0.03]"
-                        style={{
-                            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%236366f1' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
-                        }}
-                    />
-                </motion.div>
+        <div className="min-h-screen bg-canvas overflow-x-hidden pt-[72px]">
+            {/* 1. HERO: PROFESSIONAL ENTRY */}
+            <section className="relative py-12 lg:py-24 px-4 overflow-hidden">
+                {/* Subtle Background Elements */}
+                <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-primary/5 rounded-full blur-[120px] -z-10" />
+                <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-accent/5 rounded-full blur-[120px] -z-10" />
 
-                <div className="container relative">
-                    <div className="flex flex-col lg:flex-row items-center justify-between gap-8 py-8 lg:py-16">
-                        {/* Left: Content */}
-                        <div className="flex-1 text-center lg:text-left max-w-2xl relative z-10">
-                            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight mb-6">
-                                <span className="text-gradient">HRprep: Train Smarter.</span>
-                                <br />
-                                <span className="text-text">Feel Confident.</span>
-                            </h1>
-                            <p className="text-lg sm:text-xl text-text-secondary mb-8 leading-relaxed">
-                                Meet <span className="font-semibold text-primary">Quinn</span> — your adaptive AI interview mentor
-                                to guide you through interview preparation and career advancement.
-                            </p>
+                <div className="container max-w-6xl mx-auto">
+                    <div className="text-center mb-12">
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/5 border border-primary/10 text-primary text-xs font-bold uppercase tracking-widest mb-6"
+                        >
+                            <span className="relative flex h-2 w-2">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+                            </span>
+                            AI-Powered HR Interview Intelligence
+                        </motion.div>
 
-                            <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start items-center">
-                                <MagneticButton
-                                    onClick={() => navigate('/choose-path')}
-                                    className="btn-cta px-8 py-4 text-lg rounded-full min-w-[200px]"
-                                >
-                                    Start Interview
-                                </MagneticButton>
-                                <Link to="/how-it-works" className="btn-ghost px-8 py-4 text-lg rounded-full">
-                                    How It Works
-                                </Link>
+                        <motion.h1
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="text-5xl md:text-7xl font-bold tracking-tight mb-6 text-text"
+                        >
+                            Ace your next <br className="hidden md:block" />
+                            <span className="text-gradient">HR Round.</span>
+                        </motion.h1>
+
+                        <motion.p
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.1 }}
+                            className="text-xl text-text-secondary max-w-2xl mx-auto"
+                        >
+                            Train with <span className="text-primary font-semibold">Quinn</span>, your private AI interview coach. <br />
+                            Master your behavioral responses with real-time feedback on confidence, clarity, and body language.
+                        </motion.p>
+                    </div>
+
+                    {/* Interactive Hero (Includes CTA) */}
+                    <div className="relative z-10">
+                        <InteractiveHero />
+                    </div>
+                </div>
+            </section>
+
+            {/* 2. THE AI ADVANTAGE (Professional Cards) */}
+            <section className="py-24 bg-surface/50 relative">
+                <div className="container max-w-6xl mx-auto px-4">
+                    <div className="text-center mb-16">
+                        <h2 className="text-3xl md:text-5xl font-bold mb-4">Complete Interview Intelligence.</h2>
+                        <p className="text-lg text-text-secondary max-w-2xl mx-auto">We look beyond just what you say to help you present your best professional self.</p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        {/* Card 1: Tone & Speech */}
+                        <motion.div whileHover={{ y: -8 }} className="glass-card p-10 group">
+                            <div className="w-14 h-14 rounded-2xl bg-primary/10 text-primary flex items-center justify-center text-3xl mb-8 group-hover:scale-110 transition-transform">
+                                🎙️
                             </div>
+                            <h3 className="text-2xl font-bold mb-4">Verbal Excellence</h3>
+                            <p className="text-text-secondary leading-relaxed">
+                                Quinn analyzes your pacing, fillers, and confidence. Get instant tips on how to sound more authoritative and clear.
+                            </p>
+                            <div className="mt-8 pt-6 border-t border-slate-50 flex items-center gap-2">
+                                <div className="h-1 w-12 bg-primary rounded-full" />
+                                <span className="text-[10px] font-bold text-primary uppercase tracking-widest">Acoustic Analysis</span>
+                            </div>
+                        </motion.div>
 
+                        {/* Card 2: Logic & Depth */}
+                        <motion.div whileHover={{ y: -8 }} className="glass-card p-10 group">
+                            <div className="w-14 h-14 rounded-2xl bg-accent/10 text-accent flex items-center justify-center text-3xl mb-8 group-hover:scale-110 transition-transform">
+                                🧠
+                            </div>
+                            <h3 className="text-2xl font-bold mb-4">Smart Logic</h3>
+                            <p className="text-text-secondary leading-relaxed">
+                                AI parses your answers for technical depth and logic. We ensure you're addressing the core of the interviewer's question.
+                            </p>
+                            <div className="mt-8 pt-6 border-t border-slate-50 flex items-center gap-2">
+                                <div className="h-1 w-12 bg-accent rounded-full" />
+                                <span className="text-[10px] font-bold text-accent uppercase tracking-widest">Context Mapping</span>
+                            </div>
+                        </motion.div>
 
+                        {/* Card 3: Body Language */}
+                        <motion.div whileHover={{ y: -8 }} className="glass-card p-10 group">
+                            <div className="w-14 h-14 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center text-3xl mb-8 group-hover:scale-110 transition-transform">
+                                👁️
+                            </div>
+                            <h3 className="text-2xl font-bold mb-4">Presence Tracking</h3>
+                            <p className="text-text-secondary leading-relaxed">
+                                Analyze eye contact, posture, and facial cues. Learn to project confidence and maintain engagement even over video.
+                            </p>
+                            <div className="mt-8 pt-6 border-t border-slate-50 flex items-center gap-2">
+                                <div className="h-1 w-12 bg-amber-500 rounded-full" />
+                                <span className="text-[10px] font-bold text-amber-600 uppercase tracking-widest">Visual Feedback</span>
+                            </div>
+                        </motion.div>
+                    </div>
+                </div>
+            </section>
+
+            {/* 3. ATS & RESUME SCAN (Professional Visual) */}
+            <section className="py-24 overflow-hidden">
+                <div className="container max-w-6xl mx-auto px-4">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+                        <div>
+                            <span className="text-primary font-bold text-sm tracking-widest uppercase mb-4 block">Personalized Coaching</span>
+                            <h2 className="text-4xl md:text-5xl font-bold mb-8 leading-tight text-text">Resume-Tailored <br /> Simulations.</h2>
+                            <p className="text-lg text-text-secondary mb-10 leading-relaxed">
+                                Generic questions don't get you hired. Quinn scans your specific experience, tech stack, and projects to ask the deep-dive questions real HR managers care about.
+                            </p>
+                            <ul className="space-y-6">
+                                {[
+                                    { icon: "📄", title: "ATS Optimization", desc: "Align your verbal responses with top-tier recruiter expectations." },
+                                    { icon: "✨", title: "Project Deep Dives", desc: "Get challenged on the impact and logic of your past roles." },
+                                    { icon: "🎯", title: "Gap Analysis", desc: "Identify and fix weaknesses in your professional narrative." }
+                                ].map((item, i) => (
+                                    <li key={i} className="flex gap-4 p-4 rounded-xl hover:bg-white hover:shadow-sm transition-all border border-transparent hover:border-slate-100">
+                                        <div className="text-2xl">{item.icon}</div>
+                                        <div>
+                                            <h4 className="font-bold text-text mb-1">{item.title}</h4>
+                                            <p className="text-sm text-text-secondary">{item.desc}</p>
+                                        </div>
+                                    </li>
+                                ))}
+                            </ul>
                         </div>
 
-                        {/* Right: Quinn Illustration */}
-                        <div className="flex-1 flex justify-center lg:justify-end">
-                            <motion.div
-                                style={{ x: knotX, y: knotY }}
-                                className="relative"
-                            >
-                                {/* Ground Shadow - Standard Stacking */}
-                                <div className="absolute bottom-12 left-1/2 -translate-x-1/2 w-[240px] h-[24px] bg-black/40 blur-xl rounded-[100%]" />
-
-                                <NeuralKnot state="intro" />
-                                {/* Hi Bubble - Hidden on mobile, visible on tablet+ */}
-                                <div className="hidden sm:block absolute -top-4 -right-2 md:-top-6 md:-right-6 bg-white px-4 py-2 md:px-6 md:py-3 rounded-2xl shadow-xl z-10 animate-bounce-slow">
-                                    <span className="text-xl md:text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">
-                                        Hi! 👋
-                                    </span>
+                        {/* Visual Scanning Animation (Clean & Pro) */}
+                        <div className="relative">
+                            <div className="bg-white rounded-3xl p-8 shadow-2xl border border-slate-100 relative overflow-hidden group">
+                                <div className="space-y-4 opacity-50 group-hover:opacity-100 transition-opacity">
+                                    <div className="h-8 w-1/3 bg-slate-100 rounded-lg" />
+                                    <div className="h-2 w-full bg-slate-50 rounded" />
+                                    <div className="h-2 w-full bg-slate-50 rounded" />
+                                    <div className="h-2 w-3/4 bg-slate-50 rounded" />
+                                    <div className="h-24 w-full bg-slate-50 rounded-2xl mt-8" />
+                                    <div className="flex gap-4">
+                                        <div className="h-10 w-24 bg-primary/5 rounded-full" />
+                                        <div className="h-10 w-32 bg-accent/5 rounded-full" />
+                                    </div>
                                 </div>
-                            </motion.div>
+                                {/* Scanning Effect */}
+                                <motion.div
+                                    className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-transparent via-primary to-transparent"
+                                    animate={{ top: ['0%', '100%', '0%'] }}
+                                    transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                                />
+                                {/* Overlay Signal */}
+                                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                    <motion.div
+                                        initial={{ opacity: 0, scale: 0.9 }}
+                                        whileInView={{ opacity: 1, scale: 1 }}
+                                        className="bg-white/95 backdrop-blur-md px-6 py-4 rounded-2xl shadow-xl border border-slate-100 flex items-center gap-3"
+                                    >
+                                        <span className="text-primary text-xl font-bold">Quinn Analysis:</span>
+                                        <span className="text-slate-600 font-medium">Extracting Tech Stack...</span>
+                                    </motion.div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </section>
 
-            {/* Features Section */}
-            <section className="py-20 bg-white/50 backdrop-blur-sm">
-                <div className="container">
-                    <div className="grid md:grid-cols-3 gap-6 lg:gap-8">
-                        {/* Feature 1 */}
-                        <div className="glass-card p-8 hover-lift group">
-                            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition-transform duration-300">
-                                🎯
-                            </div>
-                            <h3 className="text-xl font-bold text-text mb-3">
-                                Adaptive Interview Training
-                            </h3>
-                            <p className="text-text-secondary leading-relaxed">
-                                Practice with AI-generated questions tailored to your role, experience, and target company.
-                            </p>
-                        </div>
+            {/* 4. FINAL CALL TO ACTION */}
+            <section className="py-24 bg-slate-900 overflow-hidden relative">
+                <div className="absolute inset-0 bg-primary/5 -z-10" />
+                <div className="container max-w-4xl mx-auto px-4 text-center">
+                    <h2 className="text-4xl md:text-6xl font-bold text-white mb-8">Ready to get hired?</h2>
+                    <p className="text-slate-400 text-xl mb-12 max-w-2xl mx-auto">
+                        Practice makes perfect. Start your secure, private AI interview session today.
+                    </p>
+                    <button
+                        onClick={() => navigate('/choose-path')}
+                        className="px-12 py-6 bg-white text-slate-950 rounded-full text-2xl font-bold hover:scale-105 transition-transform shadow-2xl"
+                    >
+                        Start Your Practice Round
+                    </button>
 
-                        {/* Feature 2 */}
-                        <div className="glass-card p-8 hover-lift group">
-                            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition-transform duration-300">
-                                📄
-                            </div>
-                            <h3 className="text-xl font-bold text-text mb-3">
-                                Smart Resume Insights
-                            </h3>
-                            <p className="text-text-secondary leading-relaxed">
-                                Upload your resume and get personalized questions based on your actual experience.
-                            </p>
-                        </div>
-
-                        {/* Feature 3 */}
-                        <div className="glass-card p-8 hover-lift group">
-                            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition-transform duration-300">
-                                🏢
-                            </div>
-                            <h3 className="text-xl font-bold text-text mb-3">
-                                Company-Aware Training
-                            </h3>
-                            <p className="text-text-secondary leading-relaxed">
-                                Get insights into company culture, values, and interview style to prepare effectively.
-                            </p>
-                        </div>
-                    </div>
                 </div>
             </section>
 
-            {/* How It Works */}
-            <section className="py-20 bg-transparent">
-                <div className="container">
-                    <div className="section-header">
-                        <h2>How HRprep Works</h2>
-                        <p>Four simple steps to interview confidence</p>
-                    </div>
-
-                    <div className="flex flex-col lg:flex-row items-center lg:items-start justify-center gap-6 lg:gap-4">
-                        {/* Step 1 */}
-                        <div className="flex flex-col items-center text-center max-w-[200px]">
-                            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-primary-light text-white flex items-center justify-center text-xl font-bold mb-4 shadow-frost">
-                                01
-                            </div>
-                            <h4 className="font-bold text-text mb-2">Choose Your Path</h4>
-                            <p className="text-sm text-text-secondary">Select your target track and role</p>
-                        </div>
-
-                        <div className="hidden lg:flex items-center text-text-muted text-2xl pt-6">→</div>
-
-                        {/* Step 2 */}
-                        <div className="flex flex-col items-center text-center max-w-[200px]">
-                            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-primary-light text-white flex items-center justify-center text-xl font-bold mb-4 shadow-frost">
-                                02
-                            </div>
-                            <h4 className="font-bold text-text mb-2">Add Context</h4>
-                            <p className="text-sm text-text-secondary">Company info & resume upload</p>
-                        </div>
-
-                        <div className="hidden lg:flex items-center text-text-muted text-2xl pt-6">→</div>
-
-                        {/* Step 3 */}
-                        <div className="flex flex-col items-center text-center max-w-[200px]">
-                            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-primary-light text-white flex items-center justify-center text-xl font-bold mb-4 shadow-frost">
-                                03
-                            </div>
-                            <h4 className="font-bold text-text mb-2">Meet Quinn</h4>
-                            <p className="text-sm text-text-secondary">Practice with your AI mentor</p>
-                        </div>
-
-                        <div className="hidden lg:flex items-center text-text-muted text-2xl pt-6">→</div>
-
-                        {/* Step 4 */}
-                        <div className="flex flex-col items-center text-center max-w-[200px]">
-                            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-accent to-accent-light text-white flex items-center justify-center text-xl font-bold mb-4 shadow-frost">
-                                04
-                            </div>
-                            <h4 className="font-bold text-text mb-2">Get Results</h4>
-                            <p className="text-sm text-text-secondary">Detailed feedback & improvement plan</p>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            {/* CTA Section */}
-            <section className="py-20 bg-white/80">
-                <div className="container">
-                    <div className="glass-card-strong p-12 lg:p-16 text-center relative overflow-hidden">
-                        {/* Background decoration */}
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-primary/5 to-accent/5 rounded-full blur-3xl" />
-                        <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-accent/5 to-primary/5 rounded-full blur-3xl" />
-
-                        <div className="relative z-10">
-                            <h2 className="text-3xl lg:text-4xl font-bold text-text mb-4">
-                                Ready to Transform Your Interview Skills?
-                            </h2>
-                            <p className="text-lg text-text-secondary mb-8 max-w-xl mx-auto">
-                                Start practicing with Quinn today. No signup required.
-                            </p>
-                            <MagneticButton
-                                onClick={() => navigate('/choose-path')}
-                                className="btn-cta px-10 py-4 text-lg inline-flex"
-                            >
-                                Start Your Interview →
-                            </MagneticButton>
-                        </div>
-                    </div>
-                </div>
-            </section>
         </div>
     );
 }

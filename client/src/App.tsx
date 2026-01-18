@@ -4,8 +4,6 @@ import { ScrollToTop } from './components/ScrollToTop';
 import { ToastProvider } from './components/Toast';
 import { HomePage } from './pages/HomePage';
 import { ChoosePathPage } from './pages/ChoosePathPage';
-import { TracksPage } from './pages/TracksPage';
-import { RolePage } from './pages/RolePage';
 import { InterviewSetupPage } from './pages/InterviewSetupPage';
 import { QuinnModePage } from './pages/QuinnModePage';
 import { CalibrationPage } from './pages/CalibrationPage';
@@ -39,8 +37,6 @@ function App() {
             <Route path="/" element={<HomePage />} />
             <Route path="/how-it-works" element={<HowItWorksPage />} />
             <Route path="/choose-path" element={<ChoosePathPage />} />
-            <Route path="/tracks" element={<TracksPage />} />
-            <Route path="/tracks/:trackId" element={<RolePage />} />
             <Route path="/setup" element={<InterviewSetupPage />} />
             <Route path="/setup/quinn-mode" element={<QuinnModePage />} />
             <Route path="/calibration" element={<CalibrationPage />} />

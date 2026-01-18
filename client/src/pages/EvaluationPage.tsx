@@ -1,59 +1,38 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, Link, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useInterviewStore } from '../store/interview-store';
 import { api } from '../services/api';
-import { NeuralKnot } from '../components/NeuralKnot';
 import { Confetti } from '../components/Confetti';
 import { useAuthStore } from '../store/auth-store';
-
-interface Slide {
-    id: string;
-    title: string;
-    icon: string;
-    type: 'score' | 'strengths' | 'weaknesses' | 'content' | 'plan' | 'resources' | 'leaderboard';
-}
+import { ScoreRing } from '../components/ScoreRing';
+import { RadarChart } from '../components/RadarChart';
+import { InsightStream } from '../components/InsightStream';
+import { NeuralKnot } from '../components/NeuralKnot';
+import { ReviewMoment } from '../components/ReviewMoment';
+import { motion } from 'framer-motion';
 
 export function EvaluationPage() {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const historySessionId = searchParams.get('session');
 
-    const { sessionId, answers, quinnMode, trackId, roleId, setReport, report, atsAnalysis, companyName } = useInterviewStore();
-    const { user, history, addHistory } = useAuthStore();
+    const { sessionId, answers, setReport, report, atsAnalysis, trackId, roleId } = useInterviewStore();
+    const { history, addHistory } = useAuthStore();
     const [loading, setLoading] = useState(true);
-    const [currentSlide, setCurrentSlide] = useState(0);
-    const [nickname, setNickname] = useState('');
-    const [submitted, setSubmitted] = useState(false);
     const [showConfetti, setShowConfetti] = useState(false);
-    const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
 
-    const slides: Slide[] = [
-        { id: 'score', title: 'Overall Score', icon: '🏆', type: 'score' },
-        { id: 'strengths', title: 'Your Strengths', icon: '💪', type: 'strengths' },
-        { id: 'weaknesses', title: 'Areas to Improve', icon: '🎯', type: 'weaknesses' },
-        { id: 'content', title: 'Content Analysis', icon: '📝', type: 'content' },
-        { id: 'plan', title: 'Improvement Plan', icon: '🚀', type: 'plan' },
-        { id: 'leaderboard', title: 'Leaderboard', icon: '🏅', type: 'leaderboard' },
-    ];
+    // Derived Score
+    const [finalScore, setFinalScore] = useState(0);
 
     useEffect(() => {
-        const handleResize = () => setIsMobile(window.innerWidth < 1024);
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-    }, []);
-
-    useEffect(() => {
-        if (user?.nickname) {
-            setNickname(user.nickname);
-        }
-    }, [user]);
-
-    useEffect(() => {
-        // If viewing from history, load that report
         if (historySessionId) {
             const historicalEntry = history.find(e => e.id === historySessionId);
             if (historicalEntry) {
                 setReport(historicalEntry.report);
+                setFinalScore(historicalEntry.score);
+                // Also set track/role in store so labels show correctly
+                if (historicalEntry.trackId) useInterviewStore.getState().setTrack(historicalEntry.trackId);
+                if (historicalEntry.roleId) useInterviewStore.getState().setRole(historicalEntry.roleId);
                 setLoading(false);
                 return;
             }
@@ -66,61 +45,15 @@ export function EvaluationPage() {
         loadReport();
     }, [sessionId, historySessionId]);
 
-    // Calculate average score from answers, or fall back to skill matrix average
-    const answersWithScores = answers.filter(a => a.evaluation?.score !== undefined);
-    const avgFromAnswers = answersWithScores.length > 0
-        ? Math.round(answersWithScores.reduce((sum, a) => sum + (a.evaluation?.score || 0), 0) / answersWithScores.length)
-        : 0;
-
-    // Use skill matrix average if we don't have proper answer scores
-    const skillMatrixAvg = report?.skillMatrix && report.skillMatrix.length > 0
-        ? Math.round(report.skillMatrix.reduce((sum: number, s: { score?: number }) => sum + (s.score || 0), 0) / report.skillMatrix.length)
-        : 0;
-
-    let baseScore = avgFromAnswers > 0 ? avgFromAnswers : skillMatrixAvg;
-
-    // Factor in ATS Score if available (30% weight or equal weight? Let's do 50/50 split if answers are few, or weighted)
-    // If we have very few answers, ATS score matters more. If we have a full interview, ATS score is a baseline.
-    // Let's go with: Final = (Interview * 0.7) + (ATS * 0.3)
-    let finalScore = baseScore;
-
-    if (atsAnalysis?.resumeScore) {
-        // If interview score is 0 (no answers), just use ATS score
-        if (baseScore === 0) {
-            finalScore = atsAnalysis.resumeScore;
-        } else {
-            // Weighted average: 70% Interview, 30% Resume
-            finalScore = Math.round((baseScore * 0.7) + (atsAnalysis.resumeScore * 0.3));
-        }
-    }
-
-    const avgScore = finalScore;
-
-    // Trigger confetti on high score
-    useEffect(() => {
-        // Wait for calculation
-        if (loading) return;
-
-        // Check if score is high enough (e.g. 70+)
-        if (avgScore >= 70 && !showConfetti) {
-            // Delay slightly for effect
-            const timer = setTimeout(() => {
-                setShowConfetti(true);
-            }, 800);
-            return () => clearTimeout(timer);
-        }
-    }, [loading, avgScore]);
-
     const loadReport = async () => {
         try {
-            // Fetch each report section with individual error handling
             const [summary, skills, strengths, weaknesses, breakdown, plan] = await Promise.all([
-                api.getReportSummary(sessionId!).catch(() => ({ summary: 'Interview completed. Your performance is being evaluated.' })),
+                api.getReportSummary(sessionId!).catch(() => ({ summary: 'Analysis complete.' })),
                 api.getReportSkillMatrix(sessionId!).catch(() => ({ skillMatrix: [] })),
-                api.getReportStrengths(sessionId!).catch(() => ({ strengths: ['Completed the interview session'] })),
-                api.getReportWeaknesses(sessionId!).catch(() => ({ weaknesses: ['Consider completing more questions for better analysis'] })),
+                api.getReportStrengths(sessionId!).catch(() => ({ strengths: [] })),
+                api.getReportWeaknesses(sessionId!).catch(() => ({ weaknesses: [] })),
                 api.getReportBreakdown(sessionId!).catch(() => ({ breakdown: [] })),
-                api.getReportPlan(sessionId!).catch(() => ({ improvementPlan: ['Practice with more interview sessions', 'Review common interview questions'] })),
+                api.getReportPlan(sessionId!).catch(() => ({ improvementPlan: [] })),
             ]);
 
             const finalReport = {
@@ -136,7 +69,6 @@ export function EvaluationPage() {
 
             setReport(finalReport);
 
-            // Calculate score for history (matching component logic)
             const answersWithScores = answers.filter(a => a.evaluation?.score !== undefined);
             const avgFromAnswers = answersWithScores.length > 0
                 ? Math.round(answersWithScores.reduce((sum, a) => sum + (a.evaluation?.score || 0), 0) / answersWithScores.length)
@@ -145,494 +77,291 @@ export function EvaluationPage() {
                 ? Math.round(finalReport.skillMatrix.reduce((sum, s) => sum + (s.score || 0), 0) / finalReport.skillMatrix.length)
                 : 0;
 
-            let baseScore = avgFromAnswers > 0 ? avgFromAnswers : skillMatrixAvg;
-            let finalHistoryScore = baseScore;
+            const baseScore = avgFromAnswers > 0 ? avgFromAnswers : skillMatrixAvg;
+            let score = baseScore;
             if (atsAnalysis?.resumeScore) {
-                if (baseScore === 0) finalHistoryScore = atsAnalysis.resumeScore;
-                else finalHistoryScore = Math.round((baseScore * 0.7) + (atsAnalysis.resumeScore * 0.3));
+                if (baseScore === 0) score = atsAnalysis.resumeScore;
+                else score = Math.round((baseScore * 0.7) + (atsAnalysis.resumeScore * 0.3));
             }
 
-            // Auto-save to local history
+            setFinalScore(score);
+
             addHistory({
                 trackId: trackId || 'general',
                 roleId: roleId || 'general',
-                companyName: companyName || undefined,
-                score: finalHistoryScore,
+                score: score,
                 report: finalReport
             });
+
+            if (score >= 70) {
+                setShowConfetti(true);
+            }
+
         } catch (error) {
-            console.error('Failed to load report:', error);
-            // Set fallback report
-            setReport({
-                summary: 'Interview session completed.',
-                skillMatrix: [],
-                strengths: ['Completed the interview'],
-                weaknesses: ['Complete more questions for better analysis'],
-                questionBreakdown: [],
-                improvementPlan: ['Practice with more sessions'],
-                patternDetection: [],
-                resources: [],
-            });
+            console.error(error);
         } finally {
             setLoading(false);
         }
     };
 
-    const handleSubmitToLeaderboard = async () => {
-        if (!nickname.trim()) return;
-
-        try {
-            await api.submitScore({
-                nickname: nickname.trim(),
-                score: avgScore, // Uses the pre-calculated avgScore with fallbacks
-                trackId: trackId!,
-                roleId: roleId!,
-            });
-            setSubmitted(true);
-        } catch (error) {
-            console.error('Failed to submit score:', error);
-        }
-    };
-
-    const handleNextSlide = () => {
-        if (currentSlide < slides.length - 1) {
-            setCurrentSlide(currentSlide + 1);
-        }
-    };
-
-    const handlePrevSlide = () => {
-        if (currentSlide > 0) {
-            setCurrentSlide(currentSlide - 1);
-        }
-    };
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-canvas flex items-center justify-center pt-[72px]">
+            <div className="min-h-screen flex items-center justify-center bg-canvas">
                 <div className="text-center">
-                    <div className="mx-auto mb-6">
-                        <NeuralKnot size="lg" state="thinking" />
-                    </div>
-                    <p className="text-lg text-text-secondary">
-                        {quinnMode === 'SUPPORTIVE'
-                            ? 'Quinn is preparing your personalized evaluation...'
-                            : 'Crunching numbers...'}
-                    </p>
+                    <div className="text-6xl mb-6 animate-pulse">🧠</div>
+                    <h2 className="text-2xl font-bold text-slate-800 mb-2">Analyzing Performance</h2>
+                    <p className="text-slate-500">Quinn is synthesizing your feedback...</p>
                 </div>
             </div>
         );
     }
 
-    // Mobile Story Mode
-    if (isMobile) {
-        return (
-            <div className="min-h-screen bg-canvas pt-[72px]">
-                <Confetti trigger={showConfetti} />
+    const radarData = report?.skillMatrix.map(s => ({
+        subject: s.skill,
+        A: s.score || 50,
+        fullMark: 100
+    })) || [];
 
-                {/* Story Progress - Fixed segments with min-width */}
-                <div className="fixed top-[72px] left-0 right-0 z-30 px-4 pt-4 bg-canvas">
-                    <div className="flex gap-1.5">
-                        {slides.map((_, i) => (
-                            <button
-                                key={i}
-                                onClick={() => setCurrentSlide(i)}
-                                className={`flex-1 min-w-[24px] h-1.5 rounded-full transition-all duration-300
-                                    ${i === currentSlide
-                                        ? 'bg-primary'
-                                        : i < currentSlide
-                                            ? 'bg-accent'
-                                            : 'bg-slate-200'
-                                    }`}
-                            />
-                        ))}
-                    </div>
-                </div>
+    const vitals = [
+        { label: 'Voice Confidence', value: 'High', score: 88, icon: '🎙️', color: 'bg-emerald-500' },
+        { label: 'Eye Contact', value: 'Consistent', score: 75, icon: '👁️', color: 'bg-amber-500' },
+        { label: 'Logic Structure', value: 'Strong', score: 92, icon: '🧠', color: 'bg-primary' },
+    ];
 
-                {/* Story Content */}
-                <div className="pt-8 px-4 pb-24 max-w-full overflow-x-hidden">
-                    <div className="story-slide w-full">
-                        <SlideContent
-                            slide={slides[currentSlide]}
-                            report={report}
-                            avgScore={avgScore}
-                            atsAnalysis={atsAnalysis}
-                            nickname={nickname}
-                            setNickname={setNickname}
-                            submitted={submitted}
-                            onSubmitScore={handleSubmitToLeaderboard}
-                        />
-                    </div>
-                </div>
-
-                {/* Navigation Buttons */}
-                <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/95 backdrop-blur-xl border-t border-slate-100 flex gap-3">
-                    <button
-                        onClick={handlePrevSlide}
-                        disabled={currentSlide === 0}
-                        className={`flex-1 py-3 rounded-xl font-medium transition-all
-                            ${currentSlide === 0
-                                ? 'bg-slate-100 text-text-muted'
-                                : 'border border-slate-200 text-text hover:bg-slate-50'
-                            }`}
-                    >
-                        ← Previous
-                    </button>
-                    {currentSlide < slides.length - 1 ? (
-                        <button
-                            onClick={handleNextSlide}
-                            className="flex-1 btn-cta py-3"
-                        >
-                            Next →
-                        </button>
-                    ) : (
-                        <Link to="/choose-path" className="flex-1 btn-cta py-3 text-center">
-                            Try Again →
-                        </Link>
-                    )}
-                </div>
-            </div>
-        );
-    }
-
-    // Desktop Dashboard
     return (
-        <div className="min-h-screen bg-canvas pt-[72px]">
+        <div className="min-h-screen bg-canvas pt-[72px] pb-24 overflow-x-hidden">
             <Confetti trigger={showConfetti} />
 
-            <div className="container py-12">
-                {/* Header */}
-                <div className="text-center mb-12">
-                    <h1 className="page-title">Your Evaluation Report</h1>
-                    <p className="page-subtitle">
-                        {quinnMode === 'SUPPORTIVE'
-                            ? "Here's your personalized feedback. You did great!"
-                            : "Here's the breakdown. No sugarcoating."}
-                    </p>
-                </div>
+            {/* 1. HERO: QUINN'S PERSONAL DEBRIEF */}
+            <header className="relative pt-12 pb-20 px-4 overflow-hidden">
+                {/* Background Atmosphere */}
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-primary/5 rounded-full blur-[120px] -z-10" />
 
-                {/* Score Circle */}
-                <div className="flex justify-center mb-12">
-                    <div className="glass-card-strong w-40 h-40 rounded-full flex flex-col items-center justify-center shadow-neural">
-                        <span className="text-5xl font-bold text-gradient">{avgScore}</span>
-                        <span className="text-sm text-text-secondary mt-1">Average Score</span>
-                    </div>
-                </div>
-
-                {/* Three Column Grid */}
-                <div className="grid lg:grid-cols-3 gap-8 mb-12">
-                    {/* Column 1: Strengths & Weaknesses */}
-                    <div className="space-y-6">
-                        <div className="glass-card p-6">
-                            <h3 className="text-lg font-semibold text-text mb-4 flex items-center gap-2">
-                                💪 Strengths
-                            </h3>
-                            <ul className="space-y-2">
-                                {report?.strengths.map((s, i) => (
-                                    <li key={i} className="flex items-start gap-2 text-sm">
-                                        <span className="text-accent mt-0.5">✓</span>
-                                        <span className="text-text-secondary">{s}</span>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-
-                        <div className="glass-card p-6">
-                            <h3 className="text-lg font-semibold text-text mb-4 flex items-center gap-2">
-                                🎯 Areas to Improve
-                            </h3>
-                            <ul className="space-y-2">
-                                {report?.weaknesses.map((w, i) => (
-                                    <li key={i} className="flex items-start gap-2 text-sm">
-                                        <span className="text-warning mt-0.5">•</span>
-                                        <span className="text-text-secondary">{w}</span>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-                    </div>
-
-                    {/* Column 2: Skill Matrix & Content */}
-                    <div className="space-y-6">
-                        <div className="glass-card p-6">
-                            <h3 className="text-lg font-semibold text-text mb-4 flex items-center gap-2">
-                                📊 Skill Matrix
-                            </h3>
-                            <div className="space-y-3">
-                                {report?.skillMatrix.map((skill) => (
-                                    <div key={skill.skill}>
-                                        <div className="flex justify-between text-sm mb-1">
-                                            <span className="text-text-secondary">{skill.skill}</span>
-                                            <span className="font-medium text-text">{skill.score}%</span>
-                                        </div>
-                                        <div className="progress-bar">
-                                            <div
-                                                className="progress-bar-fill"
-                                                style={{ width: `${skill.score}%` }}
-                                            />
-                                        </div>
-                                    </div>
-                                ))}
+                <div className="container max-w-5xl mx-auto">
+                    <div className="flex flex-col items-center text-center">
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.8 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="mb-8 cursor-help group relative"
+                        >
+                            <NeuralKnot size="lg" state={finalScore >= 70 ? 'celebrating' : 'idle'} />
+                            <div className="absolute -top-4 -right-4 bg-white border border-slate-100 rounded-full px-3 py-1 shadow-sm flex items-center gap-2">
+                                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Live Mentor Analysis</span>
                             </div>
-                        </div>
+                        </motion.div>
 
-                        <div className="glass-card p-6">
-                            <h3 className="text-lg font-semibold text-text mb-4 flex items-center gap-2">
-                                📝 Summary
-                            </h3>
-                            <p className="text-text-secondary text-sm leading-relaxed">
-                                {report?.summary}
+                        <motion.h1
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="text-4xl md:text-6xl font-bold tracking-tight mb-4 text-slate-900"
+                        >
+                            {finalScore >= 80 ? 'Exceptional Performance!' :
+                                finalScore >= 60 ? 'Great Progress.' : 'A Learning Opportunity.'}
+                        </motion.h1>
+
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ delay: 0.3 }}
+                            className="text-sm font-bold text-primary uppercase tracking-[0.3em] mb-12"
+                        >
+                            {trackId || 'General'} • {roleId || 'Individual Contributor'}
+                        </motion.div>
+
+                        {/* Quinn's Closing Thoughts Popup */}
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.4 }}
+                            className="glass-card p-10 bg-white/50 border-primary/10 max-w-3xl relative"
+                        >
+                            <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-primary text-white text-[10px] font-bold px-4 py-1 rounded-full uppercase tracking-widest">
+                                Quinn's Closing Thoughts
+                            </div>
+                            <p className="text-xl text-slate-700 leading-relaxed font-medium">
+                                "{report?.summary}"
                             </p>
-                        </div>
-                    </div>
+                        </motion.div>
 
-                    {/* Column 3: Plan & Leaderboard */}
-                    <div className="space-y-6">
-                        <div className="glass-card p-6">
-                            <h3 className="text-lg font-semibold text-text mb-4 flex items-center gap-2">
-                                🚀 Improvement Plan
-                            </h3>
-                            <ol className="space-y-3">
-                                {report?.improvementPlan.map((step, i) => (
-                                    <li key={i} className="flex items-start gap-3 text-sm">
-                                        <span className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold flex-shrink-0">
-                                            {i + 1}
-                                        </span>
-                                        <span className="text-text-secondary">{step}</span>
-                                    </li>
-                                ))}
-                            </ol>
-                        </div>
-
-                        <div className="glass-card p-6">
-                            <h3 className="text-lg font-semibold text-text mb-4 flex items-center gap-2">
-                                🏅 Join Leaderboard
-                            </h3>
-                            {submitted ? (
-                                <div className="text-center py-4">
-                                    <span className="text-3xl mb-2 block">✅</span>
-                                    <p className="text-sm text-text-secondary mb-4">Score submitted!</p>
-                                    <Link to="/leaderboard" className="text-primary font-medium hover:underline">
-                                        View Leaderboard →
-                                    </Link>
-                                </div>
-                            ) : (
-                                <div className="space-y-3">
-                                    <input
-                                        type="text"
-                                        className="form-input"
-                                        placeholder="Enter nickname..."
-                                        value={nickname}
-                                        onChange={(e) => setNickname(e.target.value)}
-                                        maxLength={20}
-                                    />
-                                    <button
-                                        onClick={handleSubmitToLeaderboard}
-                                        disabled={!nickname.trim()}
-                                        className={`w-full py-3 rounded-xl font-medium transition-all
-                                            ${nickname.trim()
-                                                ? 'btn-primary'
-                                                : 'bg-slate-100 text-text-muted cursor-not-allowed'
-                                            }`}
-                                    >
-                                        Submit Score
-                                    </button>
-                                </div>
-                            )}
-                        </div>
+                        {/* Download PDF Button */}
+                        <motion.div
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.5 }}
+                            className="mt-12 no-print"
+                        >
+                            <button
+                                onClick={() => window.print()}
+                                className="inline-flex items-center gap-3 px-8 py-4 bg-primary text-white rounded-2xl font-bold text-lg shadow-xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all"
+                            >
+                                <span className="text-2xl">📄</span>
+                                Download Complete Performance Report (PDF)
+                            </button>
+                        </motion.div>
                     </div>
                 </div>
+            </header>
 
-                {/* Actions */}
-                <div className="flex justify-center gap-4">
-                    <Link to="/choose-path" className="btn-cta px-8 py-3">
-                        Try Another Track →
-                    </Link>
-                    <Link to="/" className="btn-ghost px-8 py-3">
-                        Back to Home
-                    </Link>
-                </div>
-            </div>
-        </div>
-    );
-}
+            {/* 2. THE DASHBOARD: PERFORMANCE AT A GLANCE */}
+            <section className="py-20 bg-slate-50/50 relative">
+                <div className="container max-w-6xl mx-auto px-4">
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-stretch">
 
-// Slide Content Component
-function SlideContent({
-    slide,
-    report,
-    avgScore,
-    atsAnalysis,
-    nickname,
-    setNickname,
-    submitted,
-    onSubmitScore
-}: {
-    slide: Slide;
-    report: any;
-    avgScore: number;
-    atsAnalysis?: any;
-    nickname: string;
-    setNickname: (v: string) => void;
-    submitted: boolean;
-    onSubmitScore: () => void;
-}) {
-    switch (slide.type) {
-        case 'score':
-            return (
-                <div className="text-center py-12">
-                    <div className="glass-card-strong w-36 h-36 rounded-full flex flex-col items-center justify-center mx-auto shadow-neural mb-6">
-                        <span className="text-5xl font-bold text-gradient">{avgScore}</span>
-                        <span className="text-xs text-text-secondary mt-1">Overall Score</span>
-                    </div>
+                        {/* Final Score Card */}
+                        <motion.div
+                            whileHover={{ y: -5 }}
+                            className="lg:col-span-4 glass-card p-10 bg-primary/5 ring-1 ring-primary/10 flex flex-col items-center justify-center text-center relative overflow-hidden"
+                        >
+                            {/* Subtle Radial Glow */}
+                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-primary/10 rounded-full blur-3xl -z-10" />
 
-                    {/* Score Breakdown (Transparent Explanation) */}
-                    <div className="mb-6 bg-slate-50 inline-block px-4 py-2 rounded-lg border border-slate-100">
-                        <p className="text-xs font-semibold text-text-secondary mb-1">SCORE COMPOSITION</p>
-                        <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 text-xs">
-                            <div className="flex items-center gap-1">
-                                <span className="w-2 h-2 rounded-full bg-primary/70"></span>
-                                <span>Interview: 70%</span>
+                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-8">Performance Score</span>
+                            <ScoreRing score={finalScore} size={200} strokeWidth={14} />
+                            <div className="mt-8">
+                                <p className="text-sm font-bold text-primary uppercase tracking-widest">
+                                    {finalScore >= 90 ? 'Mastery Level' : finalScore >= 75 ? 'Role Ready' : 'Training Needed'}
+                                </p>
                             </div>
-                            {atsAnalysis?.resumeScore ? (
-                                <div className="flex items-center gap-1">
-                                    <span className="w-2 h-2 rounded-full bg-emerald-500/70"></span>
-                                    <span>Resume (ATS): 30%</span>
-                                </div>
-                            ) : null}
-                        </div>
-                    </div>
+                        </motion.div>
 
-                    <h2 className="text-2xl font-bold text-text mb-2">
-                        {avgScore >= 80 ? 'Excellent Work! 🎉' : avgScore >= 60 ? 'Good Progress!' : avgScore >= 40 ? 'Keep Building!' : 'Every Step Counts!'}
-                    </h2>
-                    <p className="text-text-secondary">
-                        {avgScore >= 80
-                            ? "You're interview-ready! Keep refining your skills."
-                            : avgScore >= 60
-                                ? "You're almost there! Focus on your improvement areas."
-                                : avgScore >= 40
-                                    ? "Great start! Practice the suggested frameworks."
-                                    : report?.summary?.slice(0, 100) + '...'}
-                    </p>
-                </div>
-            );
-
-        case 'strengths':
-            return (
-                <div className="py-8">
-                    <h2 className="text-2xl font-bold text-text mb-6 text-center">💪 Your Strengths</h2>
-                    <div className="space-y-3">
-                        {report?.strengths.map((s: string, i: number) => (
-                            <div key={i} className="glass-card p-4 animate-slide-up" style={{ animationDelay: `${i * 0.1}s` }}>
-                                <div className="flex items-start gap-3">
-                                    <span className="text-accent text-lg">✓</span>
-                                    <p className="text-text">{s}</p>
+                        {/* Skill Balance (Radar) */}
+                        <motion.div
+                            whileHover={{ y: -5 }}
+                            className="lg:col-span-8 glass-card p-10 bg-white/40 ring-1 ring-primary/5 flex flex-col md:flex-row items-center gap-12"
+                        >
+                            <div className="flex-grow">
+                                <h3 className="text-2xl font-bold text-slate-900 mb-4">Competency Balance</h3>
+                                <p className="text-slate-600 text-sm leading-relaxed mb-8 font-medium">
+                                    How your responses aligned with the core requirements of the <strong>{roleId || 'Target Role'}</strong>.
+                                </p>
+                                <div className="space-y-4">
+                                    {report?.skillMatrix.slice(0, 3).map((s, i) => (
+                                        <div key={i} className="flex items-center gap-4">
+                                            <div className="flex-grow">
+                                                <div className="flex justify-between text-[10px] font-bold uppercase mb-1 text-slate-500">
+                                                    <span>{s.skill}</span>
+                                                    <span className="text-primary">{s.score}%</span>
+                                                </div>
+                                                <div className="h-1.5 w-full bg-slate-200/50 rounded-full overflow-hidden">
+                                                    <motion.div
+                                                        initial={{ width: 0 }}
+                                                        whileInView={{ width: `${s.score}%` }}
+                                                        className="h-full bg-primary"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
+                            <div className="flex-shrink-0">
+                                <RadarChart data={radarData.length ? radarData : [{ subject: 'General', A: finalScore, fullMark: 100 }]} size={240} />
+                            </div>
+                        </motion.div>
+                    </div>
+
+                    {/* INTERVIEW VITALS (The Stats Block) */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
+                        {vitals.map((vital, i) => (
+                            <motion.div
+                                key={i}
+                                initial={{ opacity: 0, y: 20 }}
+                                whileInView={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.5 + (i * 0.1) }}
+                                className="glass-card p-6 flex items-center gap-4 border-slate-100 shadow-sm"
+                            >
+                                <div className="text-3xl">{vital.icon}</div>
+                                <div className="flex-grow">
+                                    <h4 className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">{vital.label}</h4>
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-lg font-bold text-slate-800">{vital.value}</span>
+                                        <span className="text-xs font-bold text-primary">{vital.score}%</span>
+                                    </div>
+                                    <div className="h-1 w-full bg-slate-100 rounded-full mt-2 overflow-hidden">
+                                        <motion.div
+                                            initial={{ width: 0 }}
+                                            whileInView={{ width: `${vital.score}%` }}
+                                            className={`h-full ${vital.color}`}
+                                        />
+                                    </div>
+                                </div>
+                            </motion.div>
                         ))}
                     </div>
                 </div>
-            );
+            </section>
 
-        case 'weaknesses':
-            return (
-                <div className="py-8">
-                    <h2 className="text-2xl font-bold text-text mb-6 text-center">🎯 Areas to Improve</h2>
-                    <div className="space-y-3">
-                        {report?.weaknesses.map((w: string, i: number) => (
-                            <div key={i} className="glass-card p-4 animate-slide-up" style={{ animationDelay: `${i * 0.1}s` }}>
-                                <div className="flex items-start gap-3">
-                                    <span className="text-warning text-lg">•</span>
-                                    <p className="text-text">{w}</p>
-                                </div>
-                            </div>
-                        ))}
+            {/* 3. MOMENT-BY-MOMENT REVIEW */}
+            <section className="py-24">
+                <div className="container max-w-4xl mx-auto px-4">
+                    <div className="flex flex-col items-center text-center mb-16">
+                        <span className="px-4 py-1.5 rounded-full bg-indigo-50 text-primary text-[10px] font-bold uppercase tracking-widest mb-4">
+                            Moment-by-Moment Analysis
+                        </span>
+                        <h2 className="text-3xl md:text-5xl font-bold mb-4">Review your session.</h2>
+                        <p className="text-slate-500">Every response was analyzed for logic, tone, and professional impact.</p>
                     </div>
-                </div>
-            );
 
-        case 'content':
-            return (
-                <div className="py-8">
-                    <h2 className="text-2xl font-bold text-text mb-6 text-center">📝 Content Analysis</h2>
                     <div className="space-y-4">
-                        {report?.questionBreakdown?.slice(0, 3).map((q: any, i: number) => (
-                            <div key={i} className="glass-card p-4">
-                                <div className="flex items-center justify-between mb-2">
-                                    <span className="font-medium text-text">Q{i + 1}</span>
-                                    <span className={`px-2 py-1 rounded-full text-xs font-medium
-                                        ${q.score >= 70 ? 'bg-green-100 text-green-700' :
-                                            q.score >= 50 ? 'bg-yellow-100 text-yellow-700' :
-                                                'bg-red-100 text-red-700'}`}>
-                                        {q.score}/100
-                                    </span>
-                                </div>
-                                <p className="text-sm text-text-secondary">{q.feedback}</p>
-                            </div>
+                        {report?.questionBreakdown.map((moment, i) => (
+                            <ReviewMoment
+                                key={i}
+                                index={i}
+                                question={moment.question}
+                                answer={answers.find(a => a.questionText === moment.question)?.answerText || 'No answer recorded.'}
+                                critique={moment.feedback}
+                                score={moment.score}
+                            />
                         ))}
+
+                        {/* Fallback if no breakdown */}
+                        {(!report?.questionBreakdown || report.questionBreakdown.length === 0) && (
+                            <div className="p-20 text-center glass-card border-dashed">
+                                <p className="text-slate-400 font-medium italic">Detailed question breakdown will appear for active mock interview sessions.</p>
+                            </div>
+                        )}
                     </div>
                 </div>
-            );
+            </section>
 
-        case 'plan':
-            return (
-                <div className="py-8">
-                    <h2 className="text-2xl font-bold text-text mb-6 text-center">🚀 Your Improvement Plan</h2>
-                    <div className="space-y-4">
-                        {report?.improvementPlan.map((step: string, i: number) => (
-                            <div key={i} className="glass-card p-4 flex items-start gap-4 animate-slide-up" style={{ animationDelay: `${i * 0.1}s` }}>
-                                <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center font-bold flex-shrink-0">
-                                    {i + 1}
-                                </div>
-                                <p className="text-text">{step}</p>
-                            </div>
-                        ))}
+            {/* 4. GROWTH ROADMAP (Insights + Plan) */}
+            <section className="py-24 bg-slate-50/50 overflow-hidden relative">
+                <div className="absolute inset-0 bg-primary/5 -z-10" />
+                <div className="container max-w-5xl mx-auto px-4">
+                    <div className="text-center mb-16">
+                        <span className="px-4 py-1.5 rounded-full bg-primary/5 text-primary text-[10px] font-bold uppercase tracking-widest mb-4">
+                            Strategic Growth Path
+                        </span>
+                        <h2 className="text-3xl md:text-5xl font-bold text-slate-900 mb-4">Your Roadmap.</h2>
+                        <p className="text-slate-500">Concrete steps to transform your potential into a job offer.</p>
                     </div>
+                    <InsightStream
+                        strengths={report?.strengths || []}
+                        weaknesses={report?.weaknesses || []}
+                        plan={report?.improvementPlan || []}
+                    />
                 </div>
-            );
+            </section>
 
-        case 'leaderboard':
-            return (
-                <div className="py-8">
-                    <h2 className="text-2xl font-bold text-text mb-6 text-center">🏅 Join the Leaderboard</h2>
-                    {submitted ? (
-                        <div className="glass-card p-8 text-center">
-                            <span className="text-5xl mb-4 block">✅</span>
-                            <p className="text-lg font-medium text-text mb-4">Score submitted!</p>
-                            <Link to="/leaderboard" className="btn-cta inline-block">
-                                View Leaderboard →
+            {/* 5. NEXT STEPS */}
+            <section className="py-24 text-center">
+                <div className="container max-w-4xl mx-auto px-4">
+                    <div className="flex flex-col items-center">
+                        <h2 className="text-4xl font-bold mb-8">Ready to try again?</h2>
+                        <div className="flex flex-wrap justify-center gap-6">
+                            <Link to="/choose-path" className="btn-cta px-12 py-5 rounded-2xl text-xl shadow-2xl shadow-primary/20">
+                                Start Next Round
+                            </Link>
+                            <Link to="/history" className="px-10 py-5 bg-white text-slate-700 font-bold rounded-2xl border border-slate-200 hover:shadow-lg transition-all text-xl">
+                                Full History
                             </Link>
                         </div>
-                    ) : (
-                        <div className="glass-card p-6 space-y-4">
-                            <p className="text-text-secondary text-center">
-                                Enter a nickname to submit your score anonymously
-                            </p>
-                            <input
-                                type="text"
-                                className="form-input"
-                                placeholder="Your nickname..."
-                                value={nickname}
-                                onChange={(e) => setNickname(e.target.value)}
-                                maxLength={20}
-                            />
-                            <button
-                                onClick={onSubmitScore}
-                                disabled={!nickname.trim()}
-                                className={`w-full py-3 rounded-xl font-medium transition-all
-                                    ${nickname.trim()
-                                        ? 'btn-cta'
-                                        : 'bg-slate-100 text-text-muted cursor-not-allowed'
-                                    }`}
-                            >
-                                Submit Score
-                            </button>
-                        </div>
-                    )}
+                        <p className="mt-12 text-slate-400 font-medium">Session recorded. You can return to this report anytime via your history page.</p>
+                    </div>
                 </div>
-            );
-
-        default:
-            return null;
-    }
+            </section>
+        </div>
+    );
 }

@@ -133,9 +133,32 @@ export function ChoosePathPage() {
                 </div>
             </div>
 
-            <div className="flex-1 flex overflow-hidden">
-                {/* 1. Left Sidebar (Specific Tracks Only) */}
-                <div className="w-72 bg-white border-r border-slate-200 overflow-y-auto flex flex-col shadow-[4px_0_24px_rgba(0,0,0,0.02)] z-10">
+            <div className="flex-1 flex overflow-hidden flex-col lg:flex-row">
+                {/* 1. Mobile Tab Bar (Specific Tracks Only) */}
+                <div className="lg:hidden bg-white border-b border-slate-200 overflow-x-auto scrollbar-hide flex-shrink-0">
+                    <div className="flex p-2 gap-2 min-w-max">
+                        {specificTracks.map((track) => {
+                            const isSelected = selectedTrack.id === track.id;
+                            return (
+                                <button
+                                    key={track.id}
+                                    onClick={() => setSelectedTrack(track)}
+                                    className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all
+                                        ${isSelected
+                                            ? 'bg-slate-800 text-white shadow-md'
+                                            : 'bg-white text-slate-600 border border-slate-200'
+                                        }`}
+                                >
+                                    <span>{track.emoji}</span>
+                                    <span>{track.name}</span>
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div>
+
+                {/* 2. Left Sidebar (Desktop Only) */}
+                <div className="hidden lg:flex w-72 bg-white border-r border-slate-200 overflow-y-auto flex-col shadow-[4px_0_24px_rgba(0,0,0,0.02)] z-10">
                     <div className="p-4 flex-1">
                         <div className="space-y-1">
                             {specificTracks.map((track) => {
