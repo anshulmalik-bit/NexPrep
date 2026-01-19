@@ -140,7 +140,7 @@ export function Navbar() {
                         />
                         {/* Menu Panel - Full Width on Mobile */}
                         <div
-                            className="absolute inset-x-0 top-0 bg-white/80 backdrop-blur-xl shadow-2xl max-h-[calc(100vh-72px)] overflow-y-auto border-b border-slate-100"
+                            className="absolute inset-x-0 top-0 bg-white shadow-2xl max-h-[calc(100vh-72px)] overflow-y-auto border-b border-slate-100"
                             onClick={(e) => e.stopPropagation()}
                         >
                             <ul className="py-4">
