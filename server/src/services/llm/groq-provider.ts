@@ -94,14 +94,30 @@ export class GroqProvider implements LLMProvider {
                 response_format: { type: 'json_object' },
             });
 
-            const content = completion.choices[0]?.message?.content || '{}';
+            let content = completion.choices[0]?.message?.content || '{}';
 
-            // Record usage
-            const usage = completion.usage;
-            const totalTokens = usage ? usage.total_tokens : estimatedTokens;
-            this.limiter.record(totalTokens);
+            // Cleanup Markdown Code Blocks (Common issue with Llama 3)
+            let cleanedContent = content.trim()
+                .replace(/^```json\s*/, '')
+                .replace(/^```\s*/, '')
+                .replace(/\s*```$/, '');
 
-            return JSON.parse(content) as T;
+            try {
+                return JSON.parse(cleanedContent) as T;
+            } catch (parseError) {
+                // Fallback: Try to find JSON object within text if the model was chatty
+                const jsonMatch = content.match(/\{[\s\S]*\}/);
+                if (jsonMatch) {
+                    try {
+                        return JSON.parse(jsonMatch[0]) as T;
+                    } catch (e) {
+                        console.error("Failed to parse extracted JSON:", e);
+                        throw parseError; // Throw original error
+                    }
+                }
+                console.error("Failed to parse JSON directly. Content:", content);
+                throw parseError;
+            }
         } catch (error: any) {
             if (error?.status === 429) {
                 this.limiter.trip(60000);
