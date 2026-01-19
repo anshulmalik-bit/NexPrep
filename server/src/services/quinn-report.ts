@@ -1,5 +1,6 @@
 import { LLMFactory } from './llm/factory.js';
 import { buildQuinnCorePrompt, QuinnMode } from './quinn-core.js';
+import { staticQuestions } from '../data/static-questions.js';
 
 interface ReportInput {
     answers: Array<{
@@ -173,6 +174,7 @@ GRADING RULES:
 3. IF the answer is relevant and coherent, the score MUST be > 40.
 4. ONLY give 0 if the answer is completely missing ("No answer recorded", "...") or gibberish.
 5. "Communication" skill score should reflect clarity and grammar.
+6. Rate "starRating" (1-5) strictly on the use of Situation, Task, Action, Result structure.
 
 OUTPUT JSON SCHEMA:
 {
@@ -188,9 +190,9 @@ OUTPUT JSON SCHEMA:
   "weaknesses": ["wk1", "wk2"],
   "improvementPlan": ["step1", "step2", "step3", "step4"],
   "evaluations": [
-    ${usePreComputed ? '// COPY input scores exactly' : '// Generate scores 0-100 based on A vs Key'}
     {
       "score": number, 
+      "starRating": number,
       "feedback": "string",
       "strength": "string",
       "weakness": "string",
@@ -203,7 +205,14 @@ OUTPUT JSON SCHEMA:
 ${answers.map((a, i) => {
         const evalData = usePreComputed ? preComputedEvaluations![i] : null;
         const delivery = a.voiceMetrics ? `[Voice: ${(a.voiceMetrics.confidence || 0).toFixed(0)}%]` : "";
-        const idealKey = a.idealAnswer && a.idealAnswer.length > 5 ? a.idealAnswer : "Evaluate based on standard professional interview answer quality.";
+
+        // Robust Ideal Key Retrieval
+        let idealKey = a.idealAnswer;
+        if (!idealKey || idealKey.length < 5) {
+            const found = staticQuestions.find(sq => sq.text === a.question);
+            if (found) idealKey = found.idealAnswerKeyPoints;
+        }
+        if (!idealKey || idealKey.length < 5) idealKey = "Evaluate based on standard professional interview answer quality.";
 
         return `Q${i + 1}: ${a.question}
 Key Points: ${idealKey}

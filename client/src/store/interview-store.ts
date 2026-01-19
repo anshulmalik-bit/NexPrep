@@ -29,6 +29,7 @@ export interface AnswerRecord {
     hintUsed?: string;
     evaluation?: {
         score: number;
+        starRating?: number;
         strengths: string[];
         weaknesses: string[];
         missingElements: string[];

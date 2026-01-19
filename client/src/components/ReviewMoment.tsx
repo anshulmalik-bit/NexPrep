@@ -6,9 +6,10 @@ interface ReviewMomentProps {
     answer: string;
     critique: string;
     score: number;
+    starRating?: number;
 }
 
-export function ReviewMoment({ index, question, answer, critique, score }: ReviewMomentProps) {
+export function ReviewMoment({ index, question, answer, critique, score, starRating }: ReviewMomentProps) {
     // Determine color based on mini-score
     const getStatusColor = (s: number) => {
         if (s >= 80) return 'emerald';
@@ -94,11 +95,16 @@ export function ReviewMoment({ index, question, answer, critique, score }: Revie
                                 </p>
                                 <div className="flex items-center gap-4 pt-2">
                                     <div className="flex -space-x-1">
-                                        {[1, 2, 3, 4, 5].map((star) => (
-                                            <span key={star} className={`text-xs ${star <= Math.round(score / 20) ? 'text-amber-400' : 'text-slate-200'}`}>
-                                                ★
-                                            </span>
-                                        ))}
+                                        {[1, 2, 3, 4, 5].map((star) => {
+                                            const isActive = starRating !== undefined
+                                                ? star <= starRating
+                                                : star <= Math.round(score / 20);
+                                            return (
+                                                <span key={star} className={`text-xs ${isActive ? 'text-amber-400' : 'text-slate-200'}`}>
+                                                    ★
+                                                </span>
+                                            );
+                                        })}
                                     </div>
                                     <span className="text-[10px] font-medium text-slate-500">STAR Method Adherence</span>
                                 </div>

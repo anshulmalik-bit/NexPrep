@@ -26,6 +26,7 @@ interface QuestionResponse {
 
 interface EvaluationResponse {
     score: number;
+    starRating?: number;
     feedback: string;
     strengths: string[];
     weaknesses: string[];
