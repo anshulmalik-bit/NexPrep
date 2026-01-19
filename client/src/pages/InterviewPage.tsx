@@ -250,11 +250,16 @@ export function InterviewPage() {
                 setMessages(prev => [...prev, {
                     id: Date.now().toString(),
                     type: 'system',
-                    content: "Interview complete!",
+                    content: "Interview complete! Finalizing results...",
                     timestamp: new Date()
                 }]);
                 setIsTyping(false);
-                setTimeout(() => navigate('/evaluation'), 2000);
+
+                try {
+                    await api.completeInterview(sid);
+                } catch (e) { console.error("Completion trigger failed", e); }
+
+                setTimeout(() => navigate('/evaluation'), 1000);
                 return;
             }
 
@@ -341,7 +346,21 @@ export function InterviewPage() {
             if (questionNumber < totalQuestions) {
                 setTimeout(() => fetchNextQuestion(sessionId || 'demo-session'), 1500);
             } else {
-                setTimeout(() => navigate('/evaluation'), 2000);
+                // FINISH INTERVIEW
+                setMessages(prev => [...prev, {
+                    id: Date.now().toString(),
+                    type: 'system',
+                    content: "Interview complete! Generating your comprehensive report...",
+                    timestamp: new Date()
+                }]);
+
+                try {
+                    await api.completeInterview(sessionId!);
+                } catch (e) {
+                    console.error("Completion trigger failed", e);
+                }
+
+                setTimeout(() => navigate('/evaluation'), 500);
             }
         } catch (error) {
             console.error('Error:', error);
