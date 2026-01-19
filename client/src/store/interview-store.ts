@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import { type ATSAnalysis } from '../services/api';
 
 // ============================================
@@ -285,209 +286,234 @@ const initialState = {
 // STORE IMPLEMENTATION
 // ============================================
 
-export const useInterviewStore = create<InterviewState>((set) => ({
-    ...initialState,
+export const useInterviewStore = create<InterviewState>()(
+    persist(
+        (set) => ({
+            ...initialState,
 
-    // ========================================
-    // SETUP ACTIONS
-    // ========================================
-    setTrack: (trackId) => set({ trackId }),
+            // ========================================
+            // SETUP ACTIONS
+            // ========================================
+            setTrack: (trackId) => set({ trackId }),
 
-    setRole: (roleId) => set({ roleId }),
+            setRole: (roleId) => set({ roleId }),
 
-    setTrackAndRole: (trackId, roleId) => set({ trackId, roleId }),
+            setTrackAndRole: (trackId, roleId) => set({ trackId, roleId }),
 
-    setCompany: (companyName, industryId, companySizeId) => set({
-        companyName,
-        industryId,
-        companySizeId,
-    }),
+            setCompany: (companyName, industryId, companySizeId) => set({
+                companyName,
+                industryId,
+                companySizeId,
+            }),
 
-    setCompanyInfo: (companyName, industryId) => set({
-        companyName: companyName || null,
-        industryId: industryId || null,
-    }),
+            setCompanyInfo: (companyName, industryId) => set({
+                companyName: companyName || null,
+                industryId: industryId || null,
+            }),
 
-    setAnswerMode: (answerMode) => set({ answerMode }),
+            setAnswerMode: (answerMode) => set({ answerMode }),
 
-    setQuinnMode: (quinnMode) => set({ quinnMode }),
+            setQuinnMode: (quinnMode) => set({ quinnMode }),
 
-    // ========================================
-    // RESUME ACTIONS
-    // ========================================
-    setResumeData: (resumeText: string | undefined, resumeKeywords: string[] | undefined, atsAnalysis?: ATSAnalysis | null) => set({
-        resumeText: resumeText || null,
-        resumeKeywords: resumeKeywords || [],
-        resumeParseStatus: resumeText ? 'success' : 'none',
-        atsAnalysis: atsAnalysis || null,
-    }),
+            // ========================================
+            // RESUME ACTIONS
+            // ========================================
+            setResumeData: (resumeText: string | undefined, resumeKeywords: string[] | undefined, atsAnalysis?: ATSAnalysis | null) => set({
+                resumeText: resumeText || null,
+                resumeKeywords: resumeKeywords || [],
+                resumeParseStatus: resumeText ? 'success' : 'none',
+                atsAnalysis: atsAnalysis || null,
+            }),
 
-    setResume: (resumeText, resumeKeywords, resumeParseStatus) => set({
-        resumeText,
-        resumeKeywords,
-        resumeParseStatus,
-    }),
+            setResume: (resumeText, resumeKeywords, resumeParseStatus) => set({
+                resumeText,
+                resumeKeywords,
+                resumeParseStatus,
+            }),
 
-    clearResume: () => set({
-        resumeText: null,
-        resumeKeywords: [],
-        resumeParseStatus: 'none',
-    }),
+            clearResume: () => set({
+                resumeText: null,
+                resumeKeywords: [],
+                resumeParseStatus: 'none',
+            }),
 
-    // ========================================
-    // PERMISSION ACTIONS
-    // ========================================
-    setMicPermission: (status) => set((state) => ({
-        permissions: { ...state.permissions, microphone: status },
-    })),
+            // ========================================
+            // PERMISSION ACTIONS
+            // ========================================
+            setMicPermission: (status) => set((state) => ({
+                permissions: { ...state.permissions, microphone: status },
+            })),
 
-    setCamPermission: (status) => set((state) => ({
-        permissions: { ...state.permissions, camera: status },
-    })),
+            setCamPermission: (status) => set((state) => ({
+                permissions: { ...state.permissions, camera: status },
+            })),
 
-    setCalibrationComplete: (complete) => set((state) => ({
-        permissions: { ...state.permissions, calibrationComplete: complete },
-    })),
+            setCalibrationComplete: (complete) => set((state) => ({
+                permissions: { ...state.permissions, calibrationComplete: complete },
+            })),
 
-    setCalibrationResult: (result) => set((state) => ({
-        calibration: {
-            ...state.calibration,
-            ...result,
-            completedAt: result.completedAt ?? new Date(),
-        },
-        permissions: { ...state.permissions, calibrationComplete: true },
-    })),
+            setCalibrationResult: (result) => set((state) => ({
+                calibration: {
+                    ...state.calibration,
+                    ...result,
+                    completedAt: result.completedAt ?? new Date(),
+                },
+                permissions: { ...state.permissions, calibrationComplete: true },
+            })),
 
-    // ========================================
-    // LIVE METRICS ACTIONS
-    // ========================================
-    updatePacing: (pacing) => set((state) => ({
-        liveMetrics: { ...state.liveMetrics, pacing },
-    })),
+            // ========================================
+            // LIVE METRICS ACTIONS
+            // ========================================
+            updatePacing: (pacing) => set((state) => ({
+                liveMetrics: { ...state.liveMetrics, pacing },
+            })),
 
-    incrementFillerWord: () => set((state) => ({
-        liveMetrics: {
-            ...state.liveMetrics,
-            fillerWordCount: state.liveMetrics.fillerWordCount + 1,
-        },
-    })),
+            incrementFillerWord: () => set((state) => ({
+                liveMetrics: {
+                    ...state.liveMetrics,
+                    fillerWordCount: state.liveMetrics.fillerWordCount + 1,
+                },
+            })),
 
-    updateGaze: (gaze) => set((state) => ({
-        liveMetrics: { ...state.liveMetrics, gaze },
-    })),
+            updateGaze: (gaze) => set((state) => ({
+                liveMetrics: { ...state.liveMetrics, gaze },
+            })),
 
-    updatePosture: (posture) => set((state) => ({
-        liveMetrics: { ...state.liveMetrics, posture },
-    })),
+            updatePosture: (posture) => set((state) => ({
+                liveMetrics: { ...state.liveMetrics, posture },
+            })),
 
-    updateVolume: (volume) => set((state) => ({
-        liveMetrics: { ...state.liveMetrics, volume },
-    })),
+            updateVolume: (volume) => set((state) => ({
+                liveMetrics: { ...state.liveMetrics, volume },
+            })),
 
-    updateConfidence: (confidence) => set((state) => ({
-        liveMetrics: { ...state.liveMetrics, confidence },
-    })),
+            updateConfidence: (confidence) => set((state) => ({
+                liveMetrics: { ...state.liveMetrics, confidence },
+            })),
 
-    updateFaceAnalysis: (metrics) => set((state) => ({
-        liveMetrics: { ...state.liveMetrics, ...metrics }
-    })),
+            updateFaceAnalysis: (metrics) => set((state) => ({
+                liveMetrics: { ...state.liveMetrics, ...metrics }
+            })),
 
-    resetMetrics: () => set({ liveMetrics: initialLiveMetrics }),
+            resetMetrics: () => set({ liveMetrics: initialLiveMetrics }),
 
-    // ========================================
-    // UI ACTIONS
-    // ========================================
-    toggleHud: () => set((state) => ({
-        ui: { ...state.ui, hudVisible: !state.ui.hudVisible },
-    })),
+            // ========================================
+            // UI ACTIONS
+            // ========================================
+            toggleHud: () => set((state) => ({
+                ui: { ...state.ui, hudVisible: !state.ui.hudVisible },
+            })),
 
-    setHudVisible: (hudVisible) => set((state) => ({
-        ui: { ...state.ui, hudVisible },
-    })),
+            setHudVisible: (hudVisible) => set((state) => ({
+                ui: { ...state.ui, hudVisible },
+            })),
 
-    openBottomSheet: () => set((state) => ({
-        ui: { ...state.ui, bottomSheetOpen: true },
-    })),
+            openBottomSheet: () => set((state) => ({
+                ui: { ...state.ui, bottomSheetOpen: true },
+            })),
 
-    closeBottomSheet: () => set((state) => ({
-        ui: { ...state.ui, bottomSheetOpen: false },
-    })),
+            closeBottomSheet: () => set((state) => ({
+                ui: { ...state.ui, bottomSheetOpen: false },
+            })),
 
-    toggleBottomSheet: () => set((state) => ({
-        ui: { ...state.ui, bottomSheetOpen: !state.ui.bottomSheetOpen },
-    })),
+            toggleBottomSheet: () => set((state) => ({
+                ui: { ...state.ui, bottomSheetOpen: !state.ui.bottomSheetOpen },
+            })),
 
-    setUtilityPanelTab: (utilityPanelTab) => set((state) => ({
-        ui: { ...state.ui, utilityPanelTab },
-    })),
+            setUtilityPanelTab: (utilityPanelTab) => set((state) => ({
+                ui: { ...state.ui, utilityPanelTab },
+            })),
 
-    setHint: (currentHint) => set((state) => ({
-        ui: { ...state.ui, currentHint, hintLoading: false },
-    })),
+            setHint: (currentHint) => set((state) => ({
+                ui: { ...state.ui, currentHint, hintLoading: false },
+            })),
 
-    setHintLoading: (hintLoading) => set((state) => ({
-        ui: { ...state.ui, hintLoading },
-    })),
+            setHintLoading: (hintLoading) => set((state) => ({
+                ui: { ...state.ui, hintLoading },
+            })),
 
-    // ========================================
-    // INTERVIEW ACTIONS
-    // ========================================
-    startSession: (sessionId, totalQuestions) => set({
-        sessionId,
-        questionNumber: 0,
-        totalQuestions: totalQuestions ?? 12,
-        answers: [],
-        currentQuestion: null,
-        liveMetrics: initialLiveMetrics,
-    }),
+            // ========================================
+            // INTERVIEW ACTIONS
+            // ========================================
+            startSession: (sessionId, totalQuestions) => set({
+                sessionId,
+                questionNumber: 0,
+                totalQuestions: totalQuestions ?? 12,
+                answers: [],
+                currentQuestion: null,
+                liveMetrics: initialLiveMetrics,
+            }),
 
-    resetSession: () => set({
-        sessionId: null,
-        currentQuestion: null,
-        questionNumber: 0,
-        totalQuestions: 12,
-        answers: [],
-    }),
+            resetSession: () => set({
+                sessionId: null,
+                currentQuestion: null,
+                questionNumber: 0,
+                totalQuestions: 12,
+                answers: [],
+            }),
 
-    setQuestion: (currentQuestion) => set((state) => ({
-        currentQuestion,
-        questionNumber: state.questionNumber + 1,
-    })),
+            setQuestion: (currentQuestion) => set((state) => ({
+                currentQuestion,
+                questionNumber: state.questionNumber + 1,
+            })),
 
-    nextQuestion: () => set(() => ({
-        currentQuestion: null,
-        // Question will be set by API call
-    })),
+            nextQuestion: () => set(() => ({
+                currentQuestion: null,
+                // Question will be set by API call
+            })),
 
-    submitAnswer: (answer) => set((state) => ({
-        answers: [...state.answers, answer],
-        currentQuestion: null,
-    })),
+            submitAnswer: (answer) => set((state) => ({
+                answers: [...state.answers, answer],
+                currentQuestion: null,
+            })),
 
-    saveAnswer: (questionId, answerRecord) => set((state) => {
-        const existingIndex = state.answers.findIndex(a => a.questionId === questionId);
-        if (existingIndex >= 0) {
-            const newAnswers = [...state.answers];
-            newAnswers[existingIndex] = answerRecord;
-            return { answers: newAnswers };
+            saveAnswer: (questionId, answerRecord) => set((state) => {
+                const existingIndex = state.answers.findIndex(a => a.questionId === questionId);
+                if (existingIndex >= 0) {
+                    const newAnswers = [...state.answers];
+                    newAnswers[existingIndex] = answerRecord;
+                    return { answers: newAnswers };
+                }
+                return { answers: [...state.answers, answerRecord] };
+            }),
+
+            // ========================================
+            // BRIEFING & REPORT ACTIONS
+            // ========================================
+            setBriefing: (briefing) => set({ briefing }),
+
+            setReport: (report) => set({ report }),
+
+            setLoading: (isLoading) => set({ isLoading }),
+
+            // ========================================
+            // GLOBAL ACTIONS
+            // ========================================
+            reset: () => set(initialState),
+        }),
+        {
+            name: 'interview-storage',
+            partialize: (state) => ({
+                trackId: state.trackId,
+                roleId: state.roleId,
+                companyName: state.companyName,
+                sessionId: state.sessionId,
+                currentQuestion: state.currentQuestion,
+                questionNumber: state.questionNumber,
+                totalQuestions: state.totalQuestions,
+                answers: state.answers,
+                report: state.report,
+                briefing: state.briefing,
+                quinnMode: state.quinnMode,
+                resumeText: state.resumeText,
+                resumeKeywords: state.resumeKeywords,
+                resumeParseStatus: state.resumeParseStatus,
+                permissions: state.permissions,
+                calibration: state.calibration,
+            } as InterviewState), // Cast to satisfy partial type if needed or just let it infer
         }
-        return { answers: [...state.answers, answerRecord] };
-    }),
-
-    // ========================================
-    // BRIEFING & REPORT ACTIONS
-    // ========================================
-    setBriefing: (briefing) => set({ briefing }),
-
-    setReport: (report) => set({ report }),
-
-    setLoading: (isLoading) => set({ isLoading }),
-
-    // ========================================
-    // GLOBAL ACTIONS
-    // ========================================
-    reset: () => set(initialState),
-}));
+    )
+);
 
 // ============================================
 // SELECTOR HOOKS (for performance)
