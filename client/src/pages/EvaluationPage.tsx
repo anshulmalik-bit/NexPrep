@@ -123,10 +123,31 @@ export function EvaluationPage() {
         fullMark: 100
     })) || [];
 
+    // Map real report data to "Vitals" or use intelligent defaults based on overall score
+    const skillScore = (name: string) => report?.skillMatrix.find(s => s.skill.includes(name))?.score || 0;
+
     const vitals = [
-        { label: 'Voice Confidence', value: 'High', score: 88, icon: '🎙️', color: 'bg-emerald-500' },
-        { label: 'Eye Contact', value: 'Consistent', score: 75, icon: '👁️', color: 'bg-amber-500' },
-        { label: 'Logic Structure', value: 'Strong', score: 92, icon: '🧠', color: 'bg-primary' },
+        {
+            label: 'Communication Clarity',
+            value: skillScore('Communication') >= 80 ? 'High' : 'Improving',
+            score: skillScore('Communication') || finalScore,
+            icon: '🎙️',
+            color: 'bg-emerald-500'
+        },
+        {
+            label: 'Problem Solving',
+            value: skillScore('Problem') >= 80 ? 'Strong' : 'Developing',
+            score: skillScore('Problem') || (finalScore > 50 ? finalScore - 5 : 0),
+            icon: '🧠',
+            color: 'bg-primary'
+        },
+        {
+            label: 'Adaptability',
+            value: skillScore('Adapt') >= 80 ? 'Flexible' : 'Rigid',
+            score: skillScore('Adapt') || (finalScore > 60 ? finalScore - 10 : 0),
+            icon: '🌊',
+            color: 'bg-amber-500'
+        },
     ];
 
     return (

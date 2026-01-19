@@ -164,18 +164,31 @@ export async function generateBatchReport(input: {
 
     const usePreComputed = preComputedEvaluations && preComputedEvaluations.length === answers.length;
 
-    const systemPrompt = `ROLE: Senior Interview Coach.
+    const systemPrompt = `ROLE: Senior Interview Coach & HR Analyst.
 TASK: ${usePreComputed ? 'Summarize graded' : 'Grade & Summarize'}. Role: ${role}.
 
-OUTPUT JSON:
+GRADING RULES:
+1. COMPARE the Candidate Answer (A) to the Answer Key (Key).
+2. Rate "score" (0-100) based on COMPREHENSIVENESS and RELEVANCE to the Key.
+3. IF the answer is relevant and coherent, the score MUST be > 40.
+4. ONLY give 0 if the answer is completely missing ("No answer recorded", "...") or gibberish.
+5. "Communication" skill score should reflect clarity and grammar.
+
+OUTPUT JSON SCHEMA:
 {
-  "summary": "2-3 sentences",
-  "skillMatrix": [{"skill": "Communication", "score": number}, ...],
+  "summary": "2-3 sentences evaluating the candidate's overall performance.",
+  "skillMatrix": [
+    {"skill": "Communication", "score": number},
+    {"skill": "Problem Solving", "score": number},
+    {"skill": "Technical Knowledge", "score": number},
+    {"skill": "Cultural Fit", "score": number},
+    {"skill": "Adaptability", "score": number}
+  ],
   "strengths": ["str1", "str2"],
   "weaknesses": ["wk1", "wk2"],
-  "improvementPlan": ["step1", "step2"],
+  "improvementPlan": ["step1", "step2", "step3", "step4"],
   "evaluations": [
-    ${usePreComputed ? '// COPY input scores exactly' : '// Generate scores 0-100'}
+    ${usePreComputed ? '// COPY input scores exactly' : '// Generate scores 0-100 based on A vs Key'}
     {
       "score": number, 
       "feedback": "string",
@@ -190,10 +203,13 @@ OUTPUT JSON:
 ${answers.map((a, i) => {
         const evalData = usePreComputed ? preComputedEvaluations![i] : null;
         const delivery = a.voiceMetrics ? `[Voice: ${(a.voiceMetrics.confidence || 0).toFixed(0)}%]` : "";
+        const idealKey = a.idealAnswer && a.idealAnswer.length > 5 ? a.idealAnswer : "Evaluate based on standard professional interview answer quality.";
+
         return `Q${i + 1}: ${a.question}
-A: ${a.answer} ${delivery}
-${evalData ? `[Score ${evalData.score}, Flags: ${evalData.flags?.join(', ') || 'None'}]` : `Key: ${a.idealAnswer}`}`;
-    }).join('\n')}`;
+Key Points: ${idealKey}
+Candidate Answer: ${a.answer} ${delivery}
+${evalData ? `[PRE-SCORED: Score ${evalData.score}, Flags: ${evalData.flags?.join(', ') || 'None'}]` : ''}`;
+    }).join('\n\n')}`;
 
 
     try {

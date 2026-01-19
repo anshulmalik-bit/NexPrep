@@ -75,7 +75,7 @@ export function ReviewMoment({ index, question, answer, critique, score }: Revie
                                 <div className="flex items-center justify-between">
                                     <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Your Response</span>
                                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${styles.bg} ${styles.text} uppercase`}>
-                                        {score}% Match
+                                        {score}/100 Score
                                     </span>
                                 </div>
                                 <p className="text-slate-600 text-sm leading-relaxed italic bg-slate-50/30 p-4 rounded-lg border border-slate-50">
