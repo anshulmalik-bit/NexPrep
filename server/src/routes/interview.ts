@@ -520,6 +520,15 @@ interviewRouter.get('/report/:sessionId/breakdown', async (req, res) => {
         const session = sessions.get(req.params.sessionId);
         if (!session) return res.status(404).json({ error: 'Session not found' });
 
+        if (session.finalReport && session.finalReport.evaluations) {
+            const breakdown = session.finalReport.evaluations.map((ev: any, index: number) => ({
+                question: session.answers[index]?.question || `Question ${index + 1}`,
+                score: ev.score,
+                feedback: ev.feedback || (ev.strength ? `${ev.strength}. ${ev.weakness}` : 'Feedback available in full report.')
+            }));
+            return res.json({ breakdown });
+        }
+
         const result = await generateBreakdown({
             answers: session.answers,
             quinnMode: session.quinnMode,
