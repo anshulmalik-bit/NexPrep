@@ -106,7 +106,9 @@ export function InterviewPage() {
         setQuestion,
         setLoading,
         updatePacing,
+        updatePacing,
         updateConfidence,
+        saveAnswer, // Destructure saveAnswer
     } = useInterviewStore();
 
 
@@ -297,6 +299,15 @@ export function InterviewPage() {
         try {
             // Submit answer to persist state and get evaluation
             const evalResult = await api.submitAnswer(sessionId, currentQuestion.id, answer);
+
+            // Save to local store for Evaluation Page
+            saveAnswer(currentQuestion.id, {
+                questionId: currentQuestion.id,
+                questionText: currentQuestion.text,
+                answerText: answer,
+                submittedAt: new Date(),
+                evaluation: evalResult
+            });
 
             // Map evaluation response to ContentFeedback format for UI
             const feedback: ContentFeedback = {
