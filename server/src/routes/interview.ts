@@ -391,85 +391,48 @@ interviewRouter.post('/complete', async (req, res) => {
 
         // Check if we need to run batch analysis
         if (session.roleId === 'general-hr' && !session.finalReport && session.answers.length > 0) {
-            try {
-                const isBatchMode = session.roleId === 'general-hr';
+            console.log(`Starting Batch Report for session ${sessionId}...`);
 
+            try {
+                // generateBatchReport now handles its own errors and returns a fallback if needed.
                 const report = await generateBatchReport({
                     answers: session.answers.map(a => ({
                         question: a.question,
                         answer: a.answer,
-                        idealAnswer: a.idealAnswer || "Good answer",
+                        idealAnswer: a.idealAnswer || "Standard professional answer",
                         voiceMetrics: a.voiceMetrics,
                         videoMetrics: a.videoMetrics
                     })),
-                    role: 'General HR Candidate',
-                    // Only pass pre-computed if we actually HAVE them (Technical mode). 
-                    // For HR Batch mode, we want the LLM to generate them from scratch using the metrics.
-                    preComputedEvaluations: isBatchMode ? undefined : session.answers.map(a => ({
-                        score: a.evaluation.score,
-                        strengths: a.evaluation.strengths,
-                        weaknesses: a.evaluation.weaknesses,
-                        flags: a.evaluation.flags
-                    }))
+                    role: session.roleId,
+                    preComputedEvaluations: []
                 });
 
-                // Backfill answers with the new evaluations (CRITICAL for Batch Mode)
+                console.log(`Batch Report Generated. Overall Score: ${report.overallScore}`);
+                session.finalReport = report;
+
+                // Backfill evaluations into answers (Single Truth Source)
                 if (report.evaluations && Array.isArray(report.evaluations)) {
                     report.evaluations.forEach((ev: any, index: number) => {
                         if (session.answers[index]) {
                             session.answers[index].evaluation = {
                                 score: ev.score,
-                                strengths: ev.strength ? [ev.strength] : [],
-                                weaknesses: ev.weakness ? [ev.weakness] : [],
-                                missingElements: [], // Default for batch
-                                suggestedStructure: "Use STAR Method", // Default for batch
-                                improvedSampleAnswer: ev.improvedSample || "Feedback available in full report",
-                                starRating: ev.starRating
-                            };
+                                strengths: [ev.strength || "Response Recorded"],
+                                weaknesses: [ev.weakness || "Analysis Pending"],
+                                missingElements: [],
+                                suggestedStructure: "N/A",
+                                improvedSampleAnswer: ev.improvedSample || "N/A",
+                                starRating: ev.starRating || 1,
+                                flags: [],
+                                // Use a temporary property or ensure interface matches
+                                feedback: ev.feedback || "Feedback available in report"
+                            } as any;
                         }
                     });
                 }
-
-                session.finalReport = report;
-            } catch (e) {
-                console.error("Batch gen failed", e);
-                // CRITICAL: Set fallback report so client doesn't see "Pending..." forever
-                const fallbackReport = {
-                    overallScore: 0,
-                    summary: "Interview completed. Detailed AI analysis unavailable due to service interruption or connection error. Please try again later.",
-                    skillMatrix: [
-                        { skill: "Participation", score: 100 },
-                        { skill: "Completeness", score: 100 }
-                    ],
-                    strengths: ["Completed all questions"],
-                    weaknesses: ["AI analysis unavailable"],
-                    improvementPlan: ["Review resources manually"],
-                    evaluations: session.answers.map(a => ({
-                        score: 0,
-                        starRating: 1,
-                        feedback: "AI Analysis Failed. Please check query length or try again.",
-                        strength: "Answer recorded",
-                        weakness: "Analysis failed",
-                        improvedSample: "N/A"
-                    }))
-                };
-
-                // Backfill fallback logic
-                fallbackReport.evaluations.forEach((ev: any, index: number) => {
-                    if (session.answers[index]) {
-                        session.answers[index].evaluation = {
-                            score: 0,
-                            strengths: ["Answer recorded"],
-                            weaknesses: ["Analysis failed"],
-                            missingElements: [],
-                            suggestedStructure: "N/A",
-                            improvedSampleAnswer: "Analysis failed",
-                            starRating: 1
-                        };
-                    }
-                });
-
-                session.finalReport = fallbackReport;
+            } catch (batchError) {
+                console.error("FATAL: Batch Report crashed even with internal catch.", batchError);
+                // Last ditch effort to prevent hanging
+                session.finalReport = { overallScore: -1, summary: "Service Failed", evaluations: [] };
             }
         }
 

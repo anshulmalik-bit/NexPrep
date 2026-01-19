@@ -69,28 +69,14 @@ export function EvaluationPage() {
 
             setReport(finalReport);
 
-            const answersWithScores = answers.filter(a => a.evaluation?.score !== undefined);
-            const avgFromAnswers = answersWithScores.length > 0
-                ? Math.round(answersWithScores.reduce((sum, a) => sum + (a.evaluation?.score || 0), 0) / answersWithScores.length)
-                : 0;
-
-            // SIMPLIFIED LOGIC: Use explicit overall score from report, or average of answers
-            const explicitScore = report?.overallScore;
-            const calculatedAvg = avgFromAnswers;
-
-            // Priority: 1. Explicit AI Score (Best) 2. Calculated Average (Backup) 3. Zero
-            const finalScoreVal = (explicitScore && explicitScore > 0)
-                ? explicitScore
-                : (calculatedAvg > 0 ? calculatedAvg : 0);
-
-            let score = finalScoreVal;
-
+            // SIMPLIFIED LOGIC: Server now guarantees overallScore is set (0-100 or -1 for error)
+            const score = report?.overallScore ?? 0;
             setFinalScore(score);
 
             addHistory({
                 trackId: trackId || 'general',
                 roleId: roleId || 'general',
-                score: score,
+                score: score >= 0 ? score : 0, // Store 0 for history sorting if failed
                 report: finalReport
             });
 
@@ -131,7 +117,7 @@ export function EvaluationPage() {
         {
             label: 'Communication Clarity',
             value: skillScore('Communication') >= 80 ? 'High' : 'Improving',
-            score: skillScore('Communication') || finalScore,
+            score: skillScore('Communication') || (finalScore >= 0 ? finalScore : 0),
             icon: '🎙️',
             color: 'bg-emerald-500'
         },
@@ -179,8 +165,9 @@ export function EvaluationPage() {
                             animate={{ opacity: 1, y: 0 }}
                             className="text-4xl md:text-6xl font-bold tracking-tight mb-4 text-slate-900"
                         >
-                            {finalScore >= 80 ? 'Exceptional Performance!' :
-                                finalScore >= 60 ? 'Great Progress.' : 'A Learning Opportunity.'}
+                            {finalScore === -1 ? 'Analysis Unavailable.' :
+                                finalScore >= 80 ? 'Exceptional Performance!' :
+                                    finalScore >= 60 ? 'Great Progress.' : 'A Learning Opportunity.'}
                         </motion.h1>
 
                         <motion.div
