@@ -215,6 +215,16 @@ export function InterviewPage() {
                     // Update store with session ID and total questions
                     startSession(sessionData.sessionId, sessionData.totalQuestions);
 
+                    // Welcome Message for General HR
+                    if (roleId === 'general-hr' || roleId?.includes('hr')) {
+                        setMessages(prev => [...prev, {
+                            id: 'welcome',
+                            type: 'quinn',
+                            content: "Hi there! I'm Quinn. I'm excited to help you practice for your upcoming HR interview. Let's get started!",
+                            timestamp: new Date()
+                        }]);
+                    }
+
                     // Fetch first question immediately
                     fetchNextQuestion(sessionData.sessionId);
                 }
