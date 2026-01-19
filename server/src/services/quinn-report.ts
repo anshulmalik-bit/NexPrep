@@ -213,14 +213,29 @@ ${evalData ? `[PRE-SCORED: Score ${evalData.score}, Flags: ${evalData.flags?.joi
 
 
     try {
-        return await getLLM().generateJson<any>(userPrompt, {
+        const report = await getLLM().generateJson<any>(userPrompt, {
             temperature: 0.4,
             systemPrompt: systemPrompt
         });
+
+        // FORCE SIMPLE PATH: Overall Score = Average of Question Scores
+        // This overrides any hallucinated "summary score" or skill matrix average.
+        const evaluations = report.evaluations || [];
+        const validScores = evaluations.map((e: any) => e.score).filter((s: number) => typeof s === 'number');
+        const calculatedOverallScore = validScores.length > 0
+            ? Math.round(validScores.reduce((a: number, b: number) => a + b, 0) / validScores.length)
+            : 0;
+
+        return {
+            ...report,
+            overallScore: calculatedOverallScore
+        };
+
     } catch (error) {
         console.error("Batch report generation failed", error);
         // Fallback structure
         return {
+            overallScore: 0,
             summary: "Interview completed. Detailed AI analysis unavailable due to service interruption.",
             skillMatrix: [
                 { skill: "Participation", score: 100 },
@@ -232,7 +247,7 @@ ${evalData ? `[PRE-SCORED: Score ${evalData.score}, Flags: ${evalData.flags?.joi
             evaluations: answers.map((_, i) => {
                 const pre = preComputedEvaluations ? preComputedEvaluations[i] : null;
                 return {
-                    score: pre ? pre.score : 80,
+                    score: pre ? pre.score : 0,
                     feedback: "Good effort.",
                     strength: pre ? pre.strengths[0] : "Answer recorded",
                     weakness: pre ? pre.weaknesses[0] : "None detected",

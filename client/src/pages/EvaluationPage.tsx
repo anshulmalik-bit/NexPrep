@@ -73,16 +73,17 @@ export function EvaluationPage() {
             const avgFromAnswers = answersWithScores.length > 0
                 ? Math.round(answersWithScores.reduce((sum, a) => sum + (a.evaluation?.score || 0), 0) / answersWithScores.length)
                 : 0;
-            const skillMatrixAvg = finalReport.skillMatrix.length > 0
-                ? Math.round(finalReport.skillMatrix.reduce((sum, s) => sum + (s.score || 0), 0) / finalReport.skillMatrix.length)
-                : 0;
 
-            const baseScore = avgFromAnswers > 0 ? avgFromAnswers : skillMatrixAvg;
-            let score = baseScore;
-            if (atsAnalysis?.resumeScore) {
-                if (baseScore === 0) score = atsAnalysis.resumeScore;
-                else score = Math.round((baseScore * 0.7) + (atsAnalysis.resumeScore * 0.3));
-            }
+            // SIMPLIFIED LOGIC: Use explicit overall score from report, or average of answers
+            const explicitScore = report?.overallScore;
+            const calculatedAvg = avgFromAnswers;
+
+            // Priority: 1. Explicit AI Score (Best) 2. Calculated Average (Backup) 3. Zero
+            const finalScoreVal = (explicitScore && explicitScore > 0)
+                ? explicitScore
+                : (calculatedAvg > 0 ? calculatedAvg : 0);
+
+            let score = finalScoreVal;
 
             setFinalScore(score);
 

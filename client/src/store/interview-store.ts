@@ -77,6 +77,7 @@ export interface CompanyBriefing {
 
 export interface FinalReport {
     summary: string;
+    overallScore?: number;
     skillMatrix: Array<{ skill: string; score: number }>;
     strengths: string[];
     weaknesses: string[];

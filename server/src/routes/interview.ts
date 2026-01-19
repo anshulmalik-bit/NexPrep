@@ -433,7 +433,10 @@ interviewRouter.get('/report/:sessionId/summary', async (req, res) => {
         if (!session) return res.status(404).json({ error: 'Session not found' });
 
         if (session.finalReport) {
-            return res.json({ summary: session.finalReport.summary });
+            return res.json({
+                summary: session.finalReport.summary,
+                overallScore: (session.finalReport as any).overallScore
+            });
         }
 
         const result = await generateReportSummary({

@@ -162,7 +162,7 @@ class ApiService {
     }
 
     // Report chunks
-    async getReportSummary(sessionId: string): Promise<{ summary: string }> {
+    async getReportSummary(sessionId: string): Promise<{ summary: string; overallScore?: number }> {
         return this.request(`/interview/report/${sessionId}/summary`);
     }
 
