@@ -16,7 +16,7 @@ export function EvaluationPage() {
     const [searchParams] = useSearchParams();
     const historySessionId = searchParams.get('session');
 
-    const { sessionId, answers, setReport, report, atsAnalysis, trackId, roleId } = useInterviewStore();
+    const { sessionId, answers, setReport, report, trackId, roleId } = useInterviewStore();
     const { history, addHistory } = useAuthStore();
     const [loading, setLoading] = useState(true);
     const [showConfetti, setShowConfetti] = useState(false);
