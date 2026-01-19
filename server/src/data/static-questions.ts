@@ -25,11 +25,7 @@ export const staticQuestions: StaticQuestion[] = [
         text: "Tell me about something you did — or failed to do — that you now feel a little ashamed of.",
         idealAnswerKeyPoints: "Say you harbor no regrets, then add a principle or habit you practice regularly for healthy human relations, like mentally reviewing the day's events to double-check interactions."
     },
-    {
-        id: 'hr-q5',
-        text: "Why are you leaving (or did you leave) this position?",
-        idealAnswerKeyPoints: "State honestly what you'd be hoping to find in a new spot (if employed). If unemployed, deflect the reason from you personally (e.g., merger, layoff)."
-    },
+
     {
         id: 'hr-q6',
         text: "How do you handle ambiguous situations where you don't have clear instructions?",
@@ -40,11 +36,7 @@ export const staticQuestions: StaticQuestion[] = [
         text: "Why should I hire you?",
         idealAnswerKeyPoints: "Give better reasons for hiring you than anyone else by tying your qualifications directly to the employer's greatest needs and desires."
     },
-    {
-        id: 'hr-q8',
-        text: "Aren't you overqualified for this position?",
-        idealAnswerKeyPoints: "Reframe 'overqualified' as an advantage. Explain that in a tight job market, you understand supply and demand and bring extra value."
-    },
+
     {
         id: 'hr-q9',
         text: "Where do you see yourself five years from now?",
@@ -65,16 +57,8 @@ export const staticQuestions: StaticQuestion[] = [
         text: "What are your career options right now?",
         idealAnswerKeyPoints: "Position yourself as a desired commodity. Mention possibilities at your present firm or that you are exploring opportunities with other firms."
     },
-    {
-        id: 'hr-q13',
-        text: "Why have you been out of work so long?",
-        idealAnswerKeyPoints: "Emphasize factors which have prolonged your job search by your own choice (e.g., taking time to find the right opportunity)."
-    },
-    {
-        id: 'hr-q14',
-        text: "Tell me honestly about the strong points and weak points of your boss (company, management team, etc.)...",
-        idealAnswerKeyPoints: "Never be negative. Stress only the good points."
-    },
+
+
     {
         id: 'hr-q15',
         text: "What good books have you read lately?",
@@ -115,11 +99,7 @@ export const staticQuestions: StaticQuestion[] = [
         text: "Looking back, what would you do differently in your life?",
         idealAnswerKeyPoints: "Indicate that you are a happy, fulfilled, optimistic person and that, in general, you wouldn't change a thing."
     },
-    {
-        id: 'hr-q23',
-        text: "Could you have done better in your last job?",
-        idealAnswerKeyPoints: "Never be negative. If explanation is needed, describe external conditions beyond your control."
-    },
+
     {
         id: 'hr-q24',
         text: "Can you work under pressure?",
@@ -130,11 +110,7 @@ export const staticQuestions: StaticQuestion[] = [
         text: "What makes you angry?",
         idealAnswerKeyPoints: "Give an answer that fits your personality and the firm's style, avoiding appearing as a hothead or wimp."
     },
-    {
-        id: 'hr-q26',
-        text: "Why aren't you earning more money at this stage of your career?",
-        idealAnswerKeyPoints: "Say you like money, but other factors (opportunity, growth) are even more important."
-    },
+
     {
         id: 'hr-q27',
         text: "Who has inspired you in your life and why?",
@@ -145,16 +121,8 @@ export const staticQuestions: StaticQuestion[] = [
         text: "What was the toughest decision you ever had to make?",
         idealAnswerKeyPoints: "Be prepared with a good example, explaining the difficulty, process, courageous execution, and beneficial results."
     },
-    {
-        id: 'hr-q29',
-        text: "Tell me about the most boring job you've ever had.",
-        idealAnswerKeyPoints: "State you have never allowed yourself to grow bored with a job."
-    },
-    {
-        id: 'hr-q30',
-        text: "Have you been absent from work more than a few days in any previous position?",
-        idealAnswerKeyPoints: "Emphasize your excellent and consistent attendance record."
-    },
+
+
     {
         id: 'hr-q31',
         text: "What changes would you make if you came on board?",
@@ -175,16 +143,8 @@ export const staticQuestions: StaticQuestion[] = [
         text: "Are you willing to relocate or travel?",
         idealAnswerKeyPoints: "First find out the details (where/how much), then respond."
     },
-    {
-        id: 'hr-q35',
-        text: "Do you have the stomach to fire people? Have you had experience firing many people?",
-        idealAnswerKeyPoints: "Describe the rational and sensible management process you follow in both hiring and firing."
-    },
-    {
-        id: 'hr-q36',
-        text: "Why have you had so many jobs?",
-        idealAnswerKeyPoints: "Minimize image as job hopper. Focus on rounded years or eliminating less important short stints."
-    },
+
+
     {
         id: 'hr-q37',
         text: "In your opinion, what is the most critical impact this role should have on the company?",
@@ -195,26 +155,10 @@ export const staticQuestions: StaticQuestion[] = [
         text: "What would you say to your boss if he's crazy about an idea, but you think it stinks?",
         idealAnswerKeyPoints: "In any conflict between values (loyalty vs honesty), always choose integrity."
     },
-    {
-        id: 'hr-q39',
-        text: "How could you have improved your career progress?",
-        idealAnswerKeyPoints: "State you are generally quite happy with your career progress."
-    },
-    {
-        id: 'hr-q40',
-        text: "What would you do if a fellow executive on your own corporate level wasn't pulling his/her weight...and this was hurting your department?",
-        idealAnswerKeyPoints: "Gauge the political style of the firm. Fall back on universal principles of effective human relations."
-    },
-    {
-        id: 'hr-q41',
-        text: "You've been with your firm a long time. Won't it be hard switching to a new company?",
-        idealAnswerKeyPoints: "Point to the many ways you have grown and adapted to changing conditions at your present firm."
-    },
-    {
-        id: 'hr-q42',
-        text: "May I contact your present employer for a reference?",
-        idealAnswerKeyPoints: "Express concern about keeping job search private, but say in time it will be okay."
-    },
+
+
+
+
     {
         id: 'hr-q43',
         text: "Give me an example of your creativity (analytical skill...managing ability, etc.)",
@@ -235,11 +179,7 @@ export const staticQuestions: StaticQuestion[] = [
         text: "How many hours a week do you normally work?",
         idealAnswerKeyPoints: "If workaholic, say so. Otherwise, say you do what is needed to be fulfilled."
     },
-    {
-        id: 'hr-q47',
-        text: "What's the most difficult part of being a (job title)?",
-        idealAnswerKeyPoints: "Redefine 'difficult' as 'challenging'. Identify an area everyone considers challenging and where you excel."
-    },
+
     {
         id: 'hr-q48',
         text: "If you were assigned a project with a deadline that was impossible to meet, how would you handle it?",
@@ -285,11 +225,7 @@ export const staticQuestions: StaticQuestion[] = [
         text: "How do you ensure you are being inclusive when working with a diverse team?",
         idealAnswerKeyPoints: "Demonstrate respect, active listening, and awareness of different perspectives."
     },
-    {
-        id: 'hr-q57',
-        text: "What was the toughest part of your last job?",
-        idealAnswerKeyPoints: "State nothing was overly difficult. Or describe enjoying important tasks most and unimportant tasks least."
-    },
+
     {
         id: 'hr-q58',
         text: "How do you define success... and how do you measure up to your own definition?",
@@ -305,16 +241,8 @@ export const staticQuestions: StaticQuestion[] = [
         text: "If you won $10 million lottery, would you still work?",
         idealAnswerKeyPoints: "Focus on your positive feelings about work and being goal-oriented. 'I'd keep doing what I'm doing.'"
     },
-    {
-        id: 'hr-q61',
-        text: "Looking back on your last position, have you done your best work?",
-        idealAnswerKeyPoints: "State that you always try to do your best, and the best of your career is right now (ahead of you)."
-    },
-    {
-        id: 'hr-q62',
-        text: "Why should I hire you from the outside when I could promote someone from within?",
-        idealAnswerKeyPoints: "Help him see the qualifications that ONLY you can offer compared to internal candidates."
-    },
+
+
     {
         id: 'hr-q63',
         text: "Tell me something negative you've heard about our company...",
