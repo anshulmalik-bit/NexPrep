@@ -390,7 +390,10 @@ interviewRouter.post('/complete', async (req, res) => {
         }
 
         // Check if we need to run batch analysis
-        if (session.roleId === 'general-hr' && !session.finalReport && session.answers.length > 0) {
+        console.log(`[DEBUG] Completing Interview ${sessionId}. Role: ${session.roleId}, Answers: ${session.answers.length}, Existing Report: ${!!session.finalReport}`);
+
+        // Relaxed check: Includes 'hr' to cover general-hr, hr-manager etc.
+        if ((session.roleId === 'general-hr' || session.roleId.includes('hr')) && session.answers.length > 0) {
             console.log(`Starting Batch Report for session ${sessionId}...`);
 
             try {
