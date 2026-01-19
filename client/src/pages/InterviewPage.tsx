@@ -106,7 +106,6 @@ export function InterviewPage() {
         setQuestion,
         setLoading,
         updatePacing,
-        updatePacing,
         updateConfidence,
         saveAnswer, // Destructure saveAnswer
     } = useInterviewStore();
