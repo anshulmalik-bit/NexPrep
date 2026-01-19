@@ -47,6 +47,7 @@ const sessions = new Map<string, {
             suggestedStructure: string;
             improvedSampleAnswer: string;
             flags?: string[];
+            starRating?: number;
         };
         voiceMetrics?: { confidence?: number; pace?: number; fillers?: number };
         videoMetrics?: { eyeContact?: number; posture?: number };
@@ -412,7 +413,23 @@ interviewRouter.post('/complete', async (req, res) => {
                     }))
                 });
 
-                // Backfill removed to preserve real-time Fair Scoring data
+                // Backfill answers with the new evaluations (CRITICAL for Batch Mode)
+                if (report.evaluations && Array.isArray(report.evaluations)) {
+                    report.evaluations.forEach((ev: any, index: number) => {
+                        if (session.answers[index]) {
+                            session.answers[index].evaluation = {
+                                score: ev.score,
+                                strengths: ev.strength ? [ev.strength] : [],
+                                weaknesses: ev.weakness ? [ev.weakness] : [],
+                                missingElements: [], // Default for batch
+                                suggestedStructure: "Use STAR Method", // Default for batch
+                                improvedSampleAnswer: ev.improvedSample || "Feedback available in full report",
+                                starRating: ev.starRating
+                            };
+                        }
+                    });
+                }
+
                 session.finalReport = report;
             } catch (e) {
                 console.error("Batch gen failed", e);
@@ -527,6 +544,7 @@ interviewRouter.get('/report/:sessionId/breakdown', async (req, res) => {
             const breakdown = session.finalReport.evaluations.map((ev: any, index: number) => ({
                 question: session.answers[index]?.question || `Question ${index + 1}`,
                 score: ev.score,
+                starRating: ev.starRating,
                 feedback: ev.feedback || (ev.strength ? `${ev.strength}. ${ev.weakness}` : 'Feedback available in full report.')
             }));
             return res.json({ breakdown });
