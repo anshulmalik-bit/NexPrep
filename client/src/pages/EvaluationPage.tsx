@@ -65,12 +65,25 @@ export function EvaluationPage() {
                 improvementPlan: plan.improvementPlan || [],
                 patternDetection: [],
                 resources: [],
+                overallScore: (summary as any).overallScore // Capture overallScore from API
             };
 
             setReport(finalReport);
 
-            // SIMPLIFIED LOGIC: Server now guarantees overallScore is set (0-100 or -1 for error)
-            const score = report?.overallScore ?? 0;
+            const answersWithScores = answers.filter(a => a.evaluation?.score !== undefined);
+            const avgFromAnswers = answersWithScores.length > 0
+                ? Math.round(answersWithScores.reduce((sum, a) => sum + (a.evaluation?.score || 0), 0) / answersWithScores.length)
+                : 0;
+
+            // SIMPLIFIED LOGIC: Use explicit overall score from report (highest priority)
+            const explicitScore = finalReport.overallScore;
+
+            // Priority: 1. Explicit AI Score (Best) 2. Calculated Average (Backup) 3. Zero
+            const finalScoreVal = (explicitScore !== undefined && explicitScore > -2)
+                ? explicitScore // Use it if it exists (even if 0 or -1)
+                : (avgFromAnswers > 0 ? avgFromAnswers : 0);
+
+            let score = finalScoreVal;
             setFinalScore(score);
 
             addHistory({
