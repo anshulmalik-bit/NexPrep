@@ -220,7 +220,7 @@ export function EvaluationPage() {
                         >
                             {/* 1. SURVEY (Primary Call to Action) */}
                             <a
-                                href="https://docs.google.com/forms"
+                                href="https://6cL5eo.short.gy/hrprep-feedback"
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="w-full md:w-auto relative group"
