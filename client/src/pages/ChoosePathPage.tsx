@@ -13,10 +13,12 @@ export function ChoosePathPage() {
         setTrackAndRole,
         setQuinnMode,
         setCompany,
-        clearResume
+        clearResume,
+        resetSession
     } = useInterviewStore();
 
     const startGenericRound = () => {
+        resetSession(); // Ensure fresh start
         setTrackAndRole('general', 'general-hr');
         setQuinnMode('SUPPORTIVE');
         setCompany(null, null, null);
@@ -30,6 +32,7 @@ export function ChoosePathPage() {
     const [selectedTrack, setSelectedTrack] = useState<Track>(specificTracks[0]);
 
     const handleRoleSelect = (role: Role) => {
+        resetSession(); // Ensure fresh start
         setTrackAndRole(selectedTrack.id, role.id);
         navigate('/setup');
     };
