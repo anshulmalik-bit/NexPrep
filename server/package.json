@@ -1,5 +1,5 @@
 {
-    "name": "nexprep-server",
+    "name": "hrprep-server",
     "version": "1.0.0",
     "type": "module",
     "scripts": {
@@ -12,6 +12,7 @@
         "cors": "^2.8.5",
         "dotenv": "^17.2.3",
         "express": "^4.21.0",
+        "express-rate-limit": "^8.2.1",
         "groq-sdk": "^0.37.0",
         "mammoth": "^1.11.0",
         "multer": "^1.4.5-lts.1",

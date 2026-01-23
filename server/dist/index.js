@@ -13,6 +13,7 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = parseInt(process.env.PORT || '3001', 10);
 // Middleware
+// Middleware
 app.use(cors());
 app.use(express.json());
 // API Routes
@@ -23,7 +24,7 @@ app.use('/api/leaderboard', leaderboardRouter);
 app.use('/api/judge', judgeRouter);
 // Health check
 app.get('/api/health', (_req, res) => {
-    res.json({ status: 'ok', message: 'NexPrep API is running' });
+    res.json({ status: 'ok', message: 'HRprep API is running' });
 });
 // Serve static files from the client build folder in production
 const clientDistPath = path.join(__dirname, '../../client/dist');
@@ -39,5 +40,5 @@ app.get('*', (_req, res) => {
 });
 // Start server
 app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 NexPrep server running on http://localhost:${PORT}`);
+    console.log(`🚀 HRprep server running on http://localhost:${PORT}`);
 });

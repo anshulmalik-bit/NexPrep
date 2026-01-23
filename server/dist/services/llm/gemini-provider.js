@@ -87,12 +87,26 @@ export class GeminiProvider {
         });
         // Clean and parse
         try {
-            // Remove any markdown fencing if present (sometimes models add it even in JSON mode)
-            const cleaned = jsonString.replace(/```json/g, '').replace(/```/g, '').trim();
+            // Remove any markdown fencing if present
+            const cleaned = jsonString.trim()
+                .replace(/^```json\s*/, '')
+                .replace(/^```\s*/, '')
+                .replace(/\s*```$/, '');
             return JSON.parse(cleaned);
         }
-        catch (e) {
-            console.error('Failed to parse JSON from Gemini:', jsonString);
+        catch (parseError) {
+            // Fallback: Try to find JSON object within text
+            const jsonMatch = jsonString.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+                try {
+                    return JSON.parse(jsonMatch[0]);
+                }
+                catch (e) {
+                    console.error("Failed to parse extracted JSON from Gemini:", e);
+                    throw parseError;
+                }
+            }
+            console.error('Failed to parse JSON directly from Gemini:', jsonString);
             throw new Error('Invalid JSON response from Gemini');
         }
     }

@@ -79,12 +79,30 @@ export class GroqProvider {
                 max_completion_tokens: maxOutputTokens,
                 response_format: { type: 'json_object' },
             });
-            const content = completion.choices[0]?.message?.content || '{}';
-            // Record usage
-            const usage = completion.usage;
-            const totalTokens = usage ? usage.total_tokens : estimatedTokens;
-            this.limiter.record(totalTokens);
-            return JSON.parse(content);
+            let content = completion.choices[0]?.message?.content || '{}';
+            // Cleanup Markdown Code Blocks (Common issue with Llama 3)
+            let cleanedContent = content.trim()
+                .replace(/^```json\s*/, '')
+                .replace(/^```\s*/, '')
+                .replace(/\s*```$/, '');
+            try {
+                return JSON.parse(cleanedContent);
+            }
+            catch (parseError) {
+                // Fallback: Try to find JSON object within text if the model was chatty
+                const jsonMatch = content.match(/\{[\s\S]*\}/);
+                if (jsonMatch) {
+                    try {
+                        return JSON.parse(jsonMatch[0]);
+                    }
+                    catch (e) {
+                        console.error("Failed to parse extracted JSON:", e);
+                        throw parseError; // Throw original error
+                    }
+                }
+                console.error("Failed to parse JSON directly. Content:", content);
+                throw parseError;
+            }
         }
         catch (error) {
             if (error?.status === 429) {

@@ -1,5 +1,5 @@
 /**
- * NexPrep Resume Judge Service
+ * HRprep Resume Judge Service
  *
  * Harsh, realistic resume evaluation using LLM.
  * Returns JSON with scores and detailed feedback.
@@ -8,7 +8,7 @@ import { LLMFactory } from './llm/factory.js';
 // ============================================================================
 // RESUME JUDGE SYSTEM PROMPT
 // ============================================================================
-const RESUME_JUDGE_PROMPT = `YOU ARE THE NEXPREP RESUME JUDGE.
+const RESUME_JUDGE_PROMPT = `YOU ARE THE HRPREP RESUME JUDGE.
 
 You evaluate resumes with the strict, unforgiving standards used by top-tier HR interviewers at competitive companies.
 

@@ -24,7 +24,7 @@ import {
 // QUINN INTERVIEW GENERATOR SYSTEM PROMPT
 // ============================================================================
 
-const QUINN_SYSTEM_PROMPT = `ROLE: QUINN, NexPrep's HR interviewer.
+const QUINN_SYSTEM_PROMPT = `ROLE: QUINN, HRprep's HR interviewer.
 TASK: 12-question HR interview (Soft skills only. NO technical questions).
 STRUCTURE:
 Q1-2: Intro/Motivations

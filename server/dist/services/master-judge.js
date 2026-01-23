@@ -13,7 +13,7 @@ import { LLMFactory } from './llm/factory.js';
 // ============================================================================
 // MASTER JUDGE SYSTEM PROMPT
 // ============================================================================
-const MASTER_JUDGE_SYSTEM_PROMPT = `YOU ARE THE NEXPREP MASTER JUDGE.
+const MASTER_JUDGE_SYSTEM_PROMPT = `YOU ARE THE HRPREP MASTER JUDGE.
 
 You evaluate a full HR interview based on:
 - All user answers (text)

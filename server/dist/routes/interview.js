@@ -304,32 +304,49 @@ interviewRouter.post('/complete', async (req, res) => {
             return res.status(404).json({ error: 'Session not found' });
         }
         // Check if we need to run batch analysis
-        if (session.roleId === 'general-hr' && !session.finalReport && session.answers.length > 0) {
+        console.log(`[DEBUG] Completing Interview ${sessionId}. Role: ${session.roleId}, Answers: ${session.answers.length}, Existing Report: ${!!session.finalReport}`);
+        // Relaxed check: Includes 'hr' to cover general-hr, hr-manager etc.
+        if ((session.roleId === 'general-hr' || session.roleId.includes('hr')) && session.answers.length > 0) {
+            console.log(`Starting Batch Report for session ${sessionId}...`);
             try {
-                const isBatchMode = session.roleId === 'general-hr';
+                // generateBatchReport now handles its own errors and returns a fallback if needed.
                 const report = await generateBatchReport({
                     answers: session.answers.map(a => ({
                         question: a.question,
                         answer: a.answer,
-                        idealAnswer: a.idealAnswer || "Good answer",
+                        idealAnswer: a.idealAnswer || "Standard professional answer",
                         voiceMetrics: a.voiceMetrics,
                         videoMetrics: a.videoMetrics
                     })),
-                    role: 'General HR Candidate',
-                    // Only pass pre-computed if we actually HAVE them (Technical mode). 
-                    // For HR Batch mode, we want the LLM to generate them from scratch using the metrics.
-                    preComputedEvaluations: isBatchMode ? undefined : session.answers.map(a => ({
-                        score: a.evaluation.score,
-                        strengths: a.evaluation.strengths,
-                        weaknesses: a.evaluation.weaknesses,
-                        flags: a.evaluation.flags
-                    }))
+                    role: session.roleId,
+                    preComputedEvaluations: []
                 });
-                // Backfill removed to preserve real-time Fair Scoring data
+                console.log(`Batch Report Generated. Overall Score: ${report.overallScore}`);
                 session.finalReport = report;
+                // Backfill evaluations into answers (Single Truth Source)
+                if (report.evaluations && Array.isArray(report.evaluations)) {
+                    report.evaluations.forEach((ev, index) => {
+                        if (session.answers[index]) {
+                            session.answers[index].evaluation = {
+                                score: ev.score,
+                                strengths: [ev.strength || "Response Recorded"],
+                                weaknesses: [ev.weakness || "Analysis Pending"],
+                                missingElements: [],
+                                suggestedStructure: "N/A",
+                                improvedSampleAnswer: ev.improvedSample || "N/A",
+                                starRating: ev.starRating || 1,
+                                flags: [],
+                                // Use a temporary property or ensure interface matches
+                                feedback: ev.feedback || "Feedback available in report"
+                            };
+                        }
+                    });
+                }
             }
-            catch (e) {
-                console.error("Batch gen failed", e);
+            catch (batchError) {
+                console.error("FATAL: Batch Report crashed even with internal catch.", batchError);
+                // Last ditch effort to prevent hanging
+                session.finalReport = { overallScore: -1, summary: "Service Failed", evaluations: [] };
             }
         }
         res.json({ success: true, reportId: sessionId });
@@ -346,7 +363,10 @@ interviewRouter.get('/report/:sessionId/summary', async (req, res) => {
         if (!session)
             return res.status(404).json({ error: 'Session not found' });
         if (session.finalReport) {
-            return res.json({ summary: session.finalReport.summary });
+            return res.json({
+                summary: session.finalReport.summary,
+                overallScore: session.finalReport.overallScore
+            });
         }
         const result = await generateReportSummary({
             answers: session.answers,
@@ -429,6 +449,15 @@ interviewRouter.get('/report/:sessionId/breakdown', async (req, res) => {
         const session = sessions.get(req.params.sessionId);
         if (!session)
             return res.status(404).json({ error: 'Session not found' });
+        if (session.finalReport && session.finalReport.evaluations) {
+            const breakdown = session.finalReport.evaluations.map((ev, index) => ({
+                question: session.answers[index]?.question || `Question ${index + 1}`,
+                score: ev.score,
+                starRating: ev.starRating,
+                feedback: ev.feedback || (ev.strength ? `${ev.strength}. ${ev.weakness}` : 'Feedback available in full report.')
+            }));
+            return res.json({ breakdown });
+        }
         const result = await generateBreakdown({
             answers: session.answers,
             quinnMode: session.quinnMode,

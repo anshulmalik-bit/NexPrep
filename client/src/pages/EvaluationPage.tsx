@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useInterviewStore } from '../store/interview-store';
 import { api } from '../services/api';
@@ -11,6 +11,7 @@ import { NeuralKnot } from '../components/NeuralKnot';
 import { ReviewMoment } from '../components/ReviewMoment';
 import { motion } from 'framer-motion';
 
+
 export function EvaluationPage() {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
@@ -20,6 +21,8 @@ export function EvaluationPage() {
     const { history, addHistory } = useAuthStore();
     const [loading, setLoading] = useState(true);
     const [showConfetti, setShowConfetti] = useState(false);
+    const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+    const reportRef = useRef<HTMLDivElement>(null);
 
     // Derived Score
     const [finalScore, setFinalScore] = useState(0);
@@ -151,7 +154,7 @@ export function EvaluationPage() {
     ];
 
     return (
-        <div className="min-h-screen bg-canvas pt-[72px] pb-24 overflow-x-hidden">
+        <div ref={reportRef} className="min-h-screen bg-canvas pt-[72px] pb-24 overflow-x-hidden">
             <Confetti trigger={showConfetti} />
 
             {/* 1. HERO: QUINN'S PERSONAL DEBRIEF */}
@@ -212,15 +215,80 @@ export function EvaluationPage() {
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.5 }}
-                            className="mt-12 no-print"
+                            data-html2canvas-ignore="true"
+                            className="mt-12 no-print flex flex-col md:flex-row items-center justify-center gap-4 w-full px-4"
                         >
-                            <button
-                                onClick={() => window.print()}
-                                className="inline-flex items-center gap-3 px-8 py-4 bg-primary text-white rounded-2xl font-bold text-lg shadow-xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all"
+                            {/* 1. SURVEY (Primary Call to Action) */}
+                            <a
+                                href="https://docs.google.com/forms"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="w-full md:w-auto relative group"
                             >
-                                <span className="text-2xl">📄</span>
-                                Download Complete Performance Report (PDF)
+                                <div className="absolute inset-0 bg-emerald-500 rounded-2xl blur-lg opacity-40 group-hover:opacity-60 transition-opacity animate-pulse" />
+                                <button className="relative w-full md:w-auto inline-flex items-center justify-center gap-3 px-8 py-4 bg-emerald-600 text-white rounded-2xl font-bold text-lg shadow-xl shadow-emerald-600/20 hover:scale-105 active:scale-95 transition-all">
+                                    <span className="text-2xl">📋</span>
+                                    <span>Survey</span>
+                                    <span className="bg-white/20 px-2 py-0.5 rounded text-xs uppercase tracking-wider">1 min</span>
+                                </button>
+                            </a>
+
+                            {/* 2. Download PDF */}
+                            <button
+                                onClick={async () => {
+                                    if (!reportRef.current || isGeneratingPdf) return;
+                                    setIsGeneratingPdf(true);
+                                    try {
+                                        // Safety timeout race
+                                        const pdfPromise = (async () => {
+                                            // Configure PDF options
+                                            const opt = {
+                                                margin: [10, 10, 10, 10] as [number, number, number, number],
+                                                filename: `HRprep-Report-${roleId || 'interview'}-${new Date().toISOString().split('T')[0]}.pdf`,
+                                                image: { type: 'jpeg' as 'jpeg', quality: 0.98 },
+                                                html2canvas: {
+                                                    scale: 2,
+                                                    useCORS: true,
+                                                    letterRendering: true,
+                                                    scrollY: 0,
+                                                },
+                                                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as 'portrait' },
+                                                pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+                                            };
+
+                                            const html2pdfModule = await import('html2pdf.js');
+                                            const html2pdfFunc = html2pdfModule.default || html2pdfModule;
+
+                                            if (typeof html2pdfFunc !== 'function') {
+                                                throw new Error(`html2pdf is not a function.`);
+                                            }
+
+                                            const worker = html2pdfFunc();
+                                            await worker.set(opt).from(reportRef.current!).save();
+                                        })();
+
+                                        const timeoutPromise = new Promise((_, reject) =>
+                                            setTimeout(() => reject(new Error('PDF generation timed out')), 15000)
+                                        );
+
+                                        await Promise.race([pdfPromise, timeoutPromise]);
+
+                                    } catch (err) {
+                                        console.error('PDF generation failed:', err);
+                                        const errorMessage = err instanceof Error ? err.message : String(err);
+                                        alert(`PDF Generation Error: ${errorMessage}\n\nPlease try using the browser print function instead (Ctrl+P).`);
+                                    } finally {
+                                        setIsGeneratingPdf(false);
+                                    }
+                                }}
+                                disabled={isGeneratingPdf}
+                                className="w-full md:w-auto inline-flex items-center justify-center gap-3 px-8 py-4 bg-white text-slate-700 border border-slate-200 rounded-2xl font-bold text-lg shadow-sm hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-wait"
+                            >
+                                <span className="text-2xl">{isGeneratingPdf ? '⏳' : '📄'}</span>
+                                {isGeneratingPdf ? 'Generating...' : 'Download PDF'}
                             </button>
+
+
                         </motion.div>
                     </div>
                 </div>

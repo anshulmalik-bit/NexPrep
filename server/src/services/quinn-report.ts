@@ -22,7 +22,10 @@ const getLLM = () => LLMFactory.getProvider();
 
 export async function generateReportSummary(input: ReportInput): Promise<{ summary: string }> {
     const { answers, role } = input;
-    const avgScore = Math.round(answers.reduce((sum, a) => sum + a.evaluation.score, 0) / answers.length);
+    const hasAnswers = answers && answers.length > 0;
+    const avgScore = hasAnswers
+        ? Math.round(answers.reduce((sum, a) => sum + (a.evaluation?.score || 0), 0) / answers.length)
+        : 0;
 
     const prompt = `Role: Post-Interview Reporter.
 Task: Summarize performance.

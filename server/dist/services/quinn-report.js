@@ -3,7 +3,10 @@ import { LLMFactory } from './llm/factory.js';
 const getLLM = () => LLMFactory.getProvider();
 export async function generateReportSummary(input) {
     const { answers, role } = input;
-    const avgScore = Math.round(answers.reduce((sum, a) => sum + a.evaluation.score, 0) / answers.length);
+    const hasAnswers = answers && answers.length > 0;
+    const avgScore = hasAnswers
+        ? Math.round(answers.reduce((sum, a) => sum + (a.evaluation?.score || 0), 0) / answers.length)
+        : 0;
     const prompt = `Role: Post-Interview Reporter.
 Task: Summarize performance.
 Context: Role ${role}, Avg Score ${avgScore}/100.
@@ -114,20 +117,36 @@ Output JSON: { "improvementPlan": ["Step 1:...", "Step 2:...", ...] }`;
 export async function generateBatchReport(input) {
     const { answers, role, preComputedEvaluations } = input;
     const usePreComputed = preComputedEvaluations && preComputedEvaluations.length === answers.length;
-    const systemPrompt = `ROLE: Senior Interview Coach.
-TASK: ${usePreComputed ? 'Summarize graded' : 'Grade & Summarize'}. Role: ${role}.
+    // 1. TRUNCATE INPUTS (Prevent Context Overflow)
+    const truncatedAnswers = answers.map(a => ({
+        ...a,
+        answer: a.answer.length > 800 ? a.answer.substring(0, 800) + "..." : a.answer
+    }));
+    const systemPrompt = `ROLE: HR Analyst.
+TASK: Grade interview answers. Role: ${role}.
 
-OUTPUT JSON:
+GRADING RULES:
+1. Rate "score" (0-100) based on relevance to Key Points.
+2. Rate "starRating" (1-5) on STAR structure.
+3. "Communication" score = clarity/grammar.
+
+OUTPUT JSON SCHEMA:
 {
-  "summary": "2-3 sentences",
-  "skillMatrix": [{"skill": "Communication", "score": number}, ...],
+  "summary": "2 sentence summary.",
+  "skillMatrix": [
+    {"skill": "Communication", "score": number},
+    {"skill": "Problem Solving", "score": number},
+    {"skill": "Technical Knowledge", "score": number},
+    {"skill": "Cultural Fit", "score": number},
+    {"skill": "Adaptability", "score": number}
+  ],
   "strengths": ["str1", "str2"],
   "weaknesses": ["wk1", "wk2"],
-  "improvementPlan": ["step1", "step2"],
+  "improvementPlan": ["step1", "step2", "step3", "step4"],
   "evaluations": [
-    ${usePreComputed ? '// COPY input scores exactly' : '// Generate scores 0-100'}
     {
       "score": number, 
+      "starRating": number,
       "feedback": "string",
       "strength": "string",
       "weakness": "string",
@@ -136,41 +155,56 @@ OUTPUT JSON:
   ]
 }`;
     const userPrompt = `INPUTS:
-${answers.map((a, i) => {
+${truncatedAnswers.map((a, i) => {
         const evalData = usePreComputed ? preComputedEvaluations[i] : null;
-        const delivery = a.voiceMetrics ? `[Voice: ${(a.voiceMetrics.confidence || 0).toFixed(0)}%]` : "";
+        let idealKey = a.idealAnswer;
+        if (!idealKey || idealKey.length < 5)
+            idealKey = "Standard professional answer";
         return `Q${i + 1}: ${a.question}
-A: ${a.answer} ${delivery}
-${evalData ? `[Score ${evalData.score}, Flags: ${evalData.flags?.join(', ') || 'None'}]` : `Key: ${a.idealAnswer}`}`;
-    }).join('\n')}`;
+Key: ${idealKey}
+Answer: ${a.answer}
+${evalData ? `[PRE-SCORED: ${evalData.score}]` : ''}`;
+    }).join('\n\n')}`;
     try {
-        return await getLLM().generateJson(userPrompt, {
-            temperature: 0.4,
+        // 2. TIMEOUT WRAPPER (Prevent Hanging)
+        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("LLM_TIMEOUT")), 25000));
+        const llmPromise = getLLM().generateJson(userPrompt, {
+            temperature: 0.3, // Lower temperature for stability
             systemPrompt: systemPrompt
         });
+        const report = await Promise.race([llmPromise, timeoutPromise]);
+        // 3. VALIDATION
+        if (!report.evaluations || !Array.isArray(report.evaluations)) {
+            throw new Error("Invalid format");
+        }
+        // 4. SCORE CALCULATION
+        const validScores = report.evaluations.map((e) => e.score).filter((s) => typeof s === 'number');
+        const overallScore = validScores.length > 0
+            ? Math.round(validScores.reduce((a, b) => a + b, 0) / validScores.length)
+            : 0;
+        return { ...report, overallScore };
     }
     catch (error) {
-        console.error("Batch report generation failed", error);
-        // Fallback structure
+        console.error("Batch report failed:", error);
+        // 5. EXPLICIT ERROR REPORT
+        // distinct from "0 score" -> Use -1 or distinct text
+        const isTimeout = error.message === "LLM_TIMEOUT";
+        const errorMsg = isTimeout ? "Analysis Timed Out" : "Analysis Failed";
         return {
-            summary: "Interview completed. Detailed AI analysis unavailable due to service interruption.",
-            skillMatrix: [
-                { skill: "Participation", score: 100 },
-                { skill: "Completeness", score: 100 }
-            ],
-            strengths: ["Completed all questions"],
-            weaknesses: ["AI analysis unavailable"],
-            improvementPlan: ["Review resources manually"],
-            evaluations: answers.map((_, i) => {
-                const pre = preComputedEvaluations ? preComputedEvaluations[i] : null;
-                return {
-                    score: pre ? pre.score : 80,
-                    feedback: "Good effort.",
-                    strength: pre ? pre.strengths[0] : "Answer recorded",
-                    weakness: pre ? pre.weaknesses[0] : "None detected",
-                    improvedSample: "N/A"
-                };
-            })
+            overallScore: -1, // Client handles this as "Error State"
+            summary: `Report unavailable: ${errorMsg}. Please try again.`,
+            skillMatrix: [],
+            strengths: ["Review needed"],
+            weaknesses: [errorMsg],
+            improvementPlan: ["Retry interview"],
+            evaluations: answers.map((_, i) => ({
+                score: 0,
+                starRating: 1,
+                feedback: `${errorMsg}. Please retry.`,
+                strength: "Response Recorded",
+                weakness: errorMsg,
+                improvedSample: "N/A"
+            }))
         };
     }
 }

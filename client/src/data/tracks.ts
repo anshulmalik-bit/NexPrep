@@ -1,4 +1,4 @@
-// Track and Role data for NexPrep
+// Track and Role data for HRprep
 
 export interface Role {
     id: string;

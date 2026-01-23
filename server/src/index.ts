@@ -16,6 +16,7 @@ const app = express();
 const PORT = parseInt(process.env.PORT || '3001', 10);
 
 // Middleware
+// Middleware
 app.use(cors());
 app.use(express.json());
 
@@ -28,7 +29,7 @@ app.use('/api/judge', judgeRouter);
 
 // Health check
 app.get('/api/health', (_req, res) => {
-    res.json({ status: 'ok', message: 'NexPrep API is running' });
+    res.json({ status: 'ok', message: 'HRprep API is running' });
 });
 
 // Serve static files from the client build folder in production
@@ -47,5 +48,5 @@ app.get('*', (_req, res) => {
 
 // Start server
 app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 NexPrep server running on http://localhost:${PORT}`);
+    console.log(`🚀 HRprep server running on http://localhost:${PORT}`);
 });

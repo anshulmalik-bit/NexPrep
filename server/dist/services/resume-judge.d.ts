@@ -1,5 +1,5 @@
 /**
- * NexPrep Resume Judge Service
+ * HRprep Resume Judge Service
  *
  * Harsh, realistic resume evaluation using LLM.
  * Returns JSON with scores and detailed feedback.
